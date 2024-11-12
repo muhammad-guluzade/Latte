@@ -1,20 +1,19 @@
 # Latte
 
-## /static
-### /js
-Upload any JS files there
+### /static
+- /js - Upload any ***JavaScript*** (*.js*) 
+- /css - Upload any ***CSS*** (*.css*) 
+- /media - Upload any ***media*** like *.png* or *.gif*
+- /db - Upload any ***database*** like *.db* or *.sql* 
 
-### /css
-Upload any CSS files there
+### /templates
 
-### /media
-Upload any media files like .png or .gif there
+- Upload any ***HTML*** (*.html* or *.htm*) 
 
-### /db
-Upload any database files like .sql or .db there
+### Flask Architecture
 
-## /templates
-Upload any html files there
+The following files and folders ***must*** be in the same folder
 
-## Flask Architecture
-Any Flask application **MUST** have main python file that is located in the same folder as /templates and /static folder.
+- .py file that contains the *app*
+- /templates folder
+- /static folder
