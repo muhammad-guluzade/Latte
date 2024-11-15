@@ -1,7 +1,15 @@
 from flask import Flask, render_template, request
+from database import db_cursor, db
+import datetime
 
 # Creating an app that runs the entire localhost server
 app = Flask(__name__)
+
+
+# Some test stuff
+# ========================
+
+# ========================
 
 # ROUTES FOR DISPLAYING PAGES
 
@@ -9,6 +17,10 @@ app = Flask(__name__)
 # ========================
 @app.route("/", methods=["GET"])
 def index():
+    sql = "INSERT INTO solve_table (Student_Email, Task_Name, Gaze_X, Gaze_Y, Gaze_Time) VALUES (%s, %s, %s, %s, %s)"
+    val = ("e254595@metu.edu.tr", "Coding Task 1", "500", "400", "12:45:55.454")
+    db_cursor.execute(sql, val)
+    db.commit()
     return render_template("index.html")
 # ========================
 
