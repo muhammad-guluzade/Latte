@@ -17,10 +17,6 @@ app = Flask(__name__)
 # ========================
 @app.route("/", methods=["GET"])
 def index():
-    sql = "INSERT INTO solve_table (Student_Email, Task_Name, Gaze_X, Gaze_Y, Gaze_Time) VALUES (%s, %s, %s, %s, %s)"
-    val = ("e254595@metu.edu.tr", "Coding Task 1", "500", "400", "12:45:55.454")
-    db_cursor.execute(sql, val)
-    db.commit()
     return render_template("index.html")
 # ========================
 
