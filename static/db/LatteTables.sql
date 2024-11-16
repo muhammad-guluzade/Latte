@@ -55,10 +55,10 @@ CREATE TABLE Solve_Table (
     Task_Name VARCHAR(255),
     Gaze_X FLOAT,
     Gaze_Y FLOAT,
-    Gaze_Time VARCHAR(50),
+    Gaze_Time VARCHAR(50), /* HH:MM:SS.millisecond DD/MM/YYYY */
     FOREIGN KEY (Student_Email) REFERENCES Student(Student_Email) ON DELETE CASCADE,
     FOREIGN KEY (Task_Name) REFERENCES Task(Name) ON DELETE CASCADE,
-    PRIMARY KEY (Student_Email, Task_Name)
+    PRIMARY KEY (Student_Email, Gaze_Time) /* Changed the primary key */
 );
 
 

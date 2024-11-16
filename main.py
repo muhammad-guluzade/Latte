@@ -46,9 +46,13 @@ def test_code():
 # ========================
 @app.route("/store", methods=["POST"])
 def store():
-    with open("details.txt", "a+") as file:
-        for dictionary in request.json:
-            file.write(f"X: {dictionary['x']}, Y: {dictionary['y']}, Time: {dictionary['t']}s\n")
+    today = datetime.datetime.today().strftime('%d/%m/%Y')
+    for dictionary in request.json:
+        db_cursor.execute(
+            "INSERT INTO solve_table (Student_Email, Task_Name, Gaze_X, Gaze_Y, Gaze_Time) VALUES (%s, %s, %s, %s, %s)",
+            (dictionary['student_email'], dictionary['task'], dictionary['x'], dictionary['y'], f"{dictionary['t']} {today}")
+        )
+        db.commit()
     return "200"
 # ========================
 
