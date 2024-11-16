@@ -38,8 +38,6 @@
         <img src="https://miro.medium.com/v2/resize:fit:828/format:webp/1*tJC5z5uqbux34YvCp1pTqA.png">
     </div>
 
-    <p id="coordinates"></p>
-
     <script>
         let gaze_coordinates = [];
         let counter = 0;
@@ -52,10 +50,10 @@
         function getCurrentTime() {
             const now = new Date();
 
-            const hours = String(now.getHours()).padStart(2, '0'); // Get hours, pad with leading zero if necessary
-            const minutes = String(now.getMinutes()).padStart(2, '0'); // Get minutes, pad with leading zero if necessary
-            const seconds = String(now.getSeconds()).padStart(2, '0'); // Get seconds, pad with leading zero if necessary
-            const milliseconds = String(now.getMilliseconds()).padStart(3, '0'); // Get milliseconds, pad with leading zero if necessary
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
 
             return `${hours}:${minutes}:${seconds}.${milliseconds}`;
         }
@@ -82,7 +80,13 @@
                 let rounded_timestamp = getCurrentTime();
                 counter++;
                 
-                gaze_coordinates.push({student_email: student_email,task: task , x: rounded_x, y: rounded_y, t: rounded_timestamp});
+                gaze_coordinates.push({
+                    student_email: student_email,
+                    task: task, 
+                    x: rounded_x, 
+                    y: rounded_y, 
+                    t: rounded_timestamp
+                });
 
                 if(counter === 20){
                     counter = 0;
