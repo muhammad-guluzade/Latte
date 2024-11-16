@@ -40,9 +40,6 @@ def test_code():
 
 # /store gets the list of 20 dictionaries which have the following structure:
 # {x: float, y: float, t: float}
-# It then stores the x, y coordinates, and time in seconds starting from 01/01/1970
-# in order to have unique time for each gaze point.
-# It stores details in details.txt for now.
 # ========================
 @app.route("/store", methods=["POST"])
 def store():
