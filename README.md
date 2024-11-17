@@ -18,6 +18,8 @@ The following files and folders ***must*** be in the same folder
 - /templates folder
 - /static folder
 
+<hr>
+
 ### How to use git? Basic commands
 
 - Step 1: Install git so that you can use it in your terminal
@@ -47,6 +49,20 @@ The following files and folders ***must*** be in the same folder
 - - `git branch` - tells which branch you are at currently
 - - `git status` - shows the status of commited/uncommited files
 
-## What is .gitignore ?
+<hr>
+
+### What is .gitignore ?
 
 In that file, you put everything that you do not want to push to main repository. For example, if in your local machine contains file "test.html" that you do not want to push, just include it as "templates/test.html", and it will not be pushed.
+
+<hr>
+
+### Files in our project (Explanation)
+
+#### main.py
+
+- This file is responsible for the flask application
+
+#### database.py
+
+- This file contains the database initializer

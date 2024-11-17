@@ -61,7 +61,6 @@ CREATE TABLE Solve_Table (
     PRIMARY KEY (Student_Email, Gaze_Time) /* Changed the primary key */
 );
 
-
 CREATE TABLE Include_Table (
     Course_Name VARCHAR(255),
     Set_Name VARCHAR(255),
