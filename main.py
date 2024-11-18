@@ -38,8 +38,10 @@ def test_code():
 
 # ROUTES FOR PROCESSING DATA WITH AJAX
 
-# /store gets the list of 20 dictionaries which have the following structure:
-# {x: float, y: float, t: float}
+# For now, /store is the only one method in the website used with AJAX
+# in order to store the gaze into the database.
+# It receives a list of 20 dictionaries, and stores the received data
+# into solve_table table inside Latte database.
 # ========================
 @app.route("/store", methods=["POST"])
 def store():
