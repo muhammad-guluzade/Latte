@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            width: 30%;
+        }
+    </style>
+</head>
+<body>
+    {% if c_ts_t == 1 %}
+        <form method="POST" action="/create_c_ts_t">
+            <label>Enter the course name: </label>
+            <input name="course_name">
+
+            <label>Enter the course description: </label>
+            <textarea name="course_description"></textarea>
+
+            <button type="submit">Save</button>
+        </form>
+    {% elif c_ts_t == 2 %}
+        <form method="POST" action="/create_c_ts_t">
+            <label>Enter the name of the set of task: </label>
+            <input name="set_of_task_name">
+
+            <button type="submit">Save</button>
+        </form>
+    {% else %}
+        <form method="POST" action="/create_c_ts_t">
+            <label>Enter the task name: </label>
+            <input name="task_name">
+
+            <label>Enter the task description: </label>
+            <textarea name="task_description"></textarea>
+
+            <label>Enter the task answer: </label>
+            <input name="task_answer">
+
+            <button type="submit">Save</button>
+        </form>
+    {% endif %}
+</body>
+</html>
