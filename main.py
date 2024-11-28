@@ -37,27 +37,6 @@ def test_code():
 # ========================
 
 # POST ROUTES (TO STORE THE DATA INTO DATABASE)
-
-# Test route for saving either course, task set, or task
-# ========================
-@app.route("/create_c_ts_t", methods=["GET", "POST"])
-def create_task_or_set_of_tasks_or_course():
-    if request.method == "GET":
-        # C - Course (1)
-        # TS - Task Set (2)
-        # T - Task (3)
-        C_TS_T = 3
-        return render_template("c_ts_t_temp.html", c_ts_t=C_TS_T)
-    else:
-        if len(request.form) == 1:
-            db_cursor.execute("INSERT INTO SetOfTask (Name) VALUES (%s)", (request.form.get("set_of_task_name"),))
-        elif len(request.form) == 2:
-            db_cursor.execute("INSERT INTO Course (Name, Description) VALUES (%s, %s)", (request.form.get("course_name"), request.form.get("course_description")))
-        else:
-            db_cursor.execute("INSERT INTO Task (Name, Description, Answer) VALUES (%s, %s, %s)", (request.form.get("task_name"), request.form.get("task_description"), request.form.get("task_answer")))
-        db.commit()
-        return redirect("/create_c_ts_t")
-# ========================
             
 
 # ROUTES FOR PROCESSING DATA WITH AJAX
