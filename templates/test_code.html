@@ -70,16 +70,16 @@
                 if(!data){
                     return;
                 }
-                let student_email = "e254595@metu.edu.tr";
-                let task = "Sorting";
+                let student_id = "2545952";
+                let task_id = 1;
                 let rounded_x = Math.round(data.x * 100) / 100;
                 let rounded_y = Math.round(data.y * 100) / 100;
                 let rounded_timestamp = getCurrentTime();
                 counter++;
                 
                 gaze_coordinates.push({
-                    student_email: student_email,
-                    task: task, 
+                    student_id: student_id,
+                    task_id: task_id, 
                     x: rounded_x, 
                     y: rounded_y, 
                     t: rounded_timestamp

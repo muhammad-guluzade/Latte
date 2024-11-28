@@ -1,78 +1,76 @@
+-- Step 1: Create User table (as it's referenced by Student and Instructor)
 CREATE TABLE User (
-    Email VARCHAR(255) PRIMARY KEY,
-    Password VARCHAR(255) NOT NULL,
+    ID VARCHAR(255) PRIMARY KEY,       -- Changed ID to the primary key
+    Username VARCHAR(255) NOT NULL,   -- Ensure Username is NOT NULL
+    Password VARCHAR(255) NOT NULL,   -- Ensure Password is NOT NULL
     Name VARCHAR(100),
     Surname VARCHAR(100),
-    DateOfBirth DATE,
-	ID VARCHAR(255)
+    DateOfBirth DATE
 );
 
-CREATE TABLE Student (
-    Student_Email VARCHAR(255),
-    FOREIGN KEY (Student_Email) REFERENCES User(Email) ON DELETE CASCADE,
-    PRIMARY KEY (Student_Email)
-);
-
+-- Step 2: Create Instructor table (depends on User table)
 CREATE TABLE Instructor (
-    Instructor_Email VARCHAR(255),
-    FOREIGN KEY (Instructor_Email) REFERENCES User(Email) ON DELETE CASCADE,
-    PRIMARY KEY (Instructor_Email)
+    Instructor_id VARCHAR(255) PRIMARY KEY, -- Changed Instructor_email to Instructor_id
+    FOREIGN KEY (Instructor_id) REFERENCES User(ID) ON DELETE CASCADE
 );
 
+-- Step 3: Create Course table (Instructor is referenced here)
 CREATE TABLE Course (
-    Name VARCHAR(255) PRIMARY KEY,
-    Description TEXT
-);
-
-CREATE TABLE Task (
-    Name VARCHAR(255) PRIMARY KEY,
+    Course_code VARCHAR(20) PRIMARY KEY, -- Added Course Code (like CNG491 or CNG300)
+    Name VARCHAR(255) NOT NULL,
     Description TEXT,
-    Answer VARCHAR(255)
+    Instructor_id VARCHAR(255), -- Added this field because there is one instructor for each course
+    FOREIGN KEY (Instructor_id) REFERENCES Instructor(Instructor_id) ON DELETE SET NULL
 );
 
+-- Step 4: Create SetOfTask table (depends on Course table)
 CREATE TABLE SetOfTask (
-    Name VARCHAR(255) PRIMARY KEY
+    Set_of_task_id INT AUTO_INCREMENT PRIMARY KEY, -- Added id to set of tasks
+    Name VARCHAR(255) NOT NULL,
+    Course_code VARCHAR(20), -- Each of set of tasks will have one course
+    FOREIGN KEY (Course_code) REFERENCES Course(Course_code) ON DELETE CASCADE
 );
 
-CREATE TABLE Join_Table (
-    Student_Email VARCHAR(255),
-    Course_Name VARCHAR(255),
-    FOREIGN KEY (Student_Email) REFERENCES Student(Student_Email) ON DELETE CASCADE,
-    FOREIGN KEY (Course_Name) REFERENCES Course(Name) ON DELETE CASCADE,
-    PRIMARY KEY (Student_Email, Course_Name)
+-- Step 5: Create Task table (depends on SetOfTask table)
+CREATE TABLE Task (
+    Task_id INT AUTO_INCREMENT PRIMARY KEY, -- Added id to tasks
+    Name VARCHAR(255) NOT NULL,
+    Description TEXT,
+    Answer VARCHAR(255),
+    Set_of_task_id INT, -- Each task will be related to one set of tasks
+    FOREIGN KEY (Set_of_task_id) REFERENCES SetOfTask(Set_of_task_id) ON DELETE CASCADE
 );
 
-CREATE TABLE Add_Table (
-    Instructor_Email VARCHAR(255),
-    Course_Name VARCHAR(255),
-    FOREIGN KEY (Instructor_Email) REFERENCES Instructor(Instructor_Email) ON DELETE CASCADE,
-    FOREIGN KEY (Course_Name) REFERENCES Course(Name) ON DELETE CASCADE,
-    PRIMARY KEY (Instructor_Email, Course_Name)
+-- Step 6: Create Student table (depends on User table)
+CREATE TABLE Student (
+    Student_id VARCHAR(255) PRIMARY KEY, -- Changed Student_email to Student_id
+    FOREIGN KEY (Student_id) REFERENCES User(ID) ON DELETE CASCADE
 );
 
-CREATE TABLE Solve_Table (
-    Student_Email VARCHAR(255),
-    Task_Name VARCHAR(255),
+-- Step 7: Create Record table (depends on Student and Task tables)
+CREATE TABLE Record (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    Student_id VARCHAR(255),
+    Task_id INT,
+    FOREIGN KEY (Student_id) REFERENCES Student(Student_id) ON DELETE CASCADE,
+    FOREIGN KEY (Task_id) REFERENCES Task(Task_id) ON DELETE CASCADE
+);
+
+-- Step 8: Create Fixation table (depends on Record table)
+CREATE TABLE Fixation (
     Gaze_X FLOAT,
     Gaze_Y FLOAT,
-    Gaze_Time VARCHAR(50), /* HH:MM:SS.millisecond DD/MM/YYYY */
-    FOREIGN KEY (Student_Email) REFERENCES Student(Student_Email) ON DELETE CASCADE,
-    FOREIGN KEY (Task_Name) REFERENCES Task(Name) ON DELETE CASCADE,
-    PRIMARY KEY (Student_Email, Gaze_Time) /* Changed the primary key */
+    Gaze_Time VARCHAR(50),
+    Record_id INT,
+    FOREIGN KEY (Record_id) REFERENCES Record(Id) ON DELETE CASCADE,
+    PRIMARY KEY (Record_id, Gaze_Time)
 );
 
-CREATE TABLE Include_Table (
-    Course_Name VARCHAR(255),
-    Set_Name VARCHAR(255),
-    FOREIGN KEY (Course_Name) REFERENCES Course(Name) ON DELETE CASCADE,
-    FOREIGN KEY (Set_Name) REFERENCES SetOfTask(Name) ON DELETE CASCADE,
-    PRIMARY KEY (Course_Name, Set_Name)
-);
-
-CREATE TABLE Has_Table (
-    Set_Name VARCHAR(255),
-    Task_Name VARCHAR(255),
-    FOREIGN KEY (Set_Name) REFERENCES SetOfTask(Name) ON DELETE CASCADE,
-    FOREIGN KEY (Task_Name) REFERENCES Task(Name) ON DELETE CASCADE,
-    PRIMARY KEY (Set_Name, Task_Name)
+-- Step 9: Create StudentCourseTable table (depends on Student and Course tables)
+CREATE TABLE StudentCourseTable (
+    Student_id VARCHAR(255),
+    Course_code VARCHAR(20),
+    FOREIGN KEY (Student_id) REFERENCES Student(Student_id) ON DELETE CASCADE,
+    FOREIGN KEY (Course_code) REFERENCES Course(Course_code) ON DELETE CASCADE,
+    PRIMARY KEY (Student_id, Course_code)
 );

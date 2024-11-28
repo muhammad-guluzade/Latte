@@ -4,6 +4,13 @@ import datetime
 
 # Creating an app that runs the entire localhost server
 app = Flask(__name__)
+LAST_RECORD = None
+
+with app.app_context():
+    db_cursor.execute("SELECT Id FROM Record")
+    LAST_RECORD = len(db_cursor.fetchall())
+    print(LAST_RECORD)
+
 
 
 # Some test stuff
@@ -48,11 +55,18 @@ def test_code():
 # ========================
 @app.route("/store", methods=["POST"])
 def store():
+    global LAST_RECORD
     today = datetime.datetime.today().strftime('%d/%m/%Y')
+    db_cursor.execute(
+        "INSERT INTO Record (Student_id, Task_id) VALUES (%s, %s)",
+        (request.json[0]["student_id"], request.json[0]["task_id"])
+    )
+    db.commit()
+    LAST_RECORD += 1
     for dictionary in request.json:
         db_cursor.execute(
-            "INSERT INTO solve_table (Student_Email, Task_Name, Gaze_X, Gaze_Y, Gaze_Time) VALUES (%s, %s, %s, %s, %s)",
-            (dictionary['student_email'], dictionary['task'], dictionary['x'], dictionary['y'], f"{dictionary['t']} {today}")
+            "INSERT INTO Fixation (Gaze_X, Gaze_Y, Gaze_Time, Record_id) VALUES (%s, %s, %s, %s)",
+            (dictionary['x'], dictionary['y'], f"{dictionary['t']} {today}", LAST_RECORD)
         )
         db.commit()
     return "200"
