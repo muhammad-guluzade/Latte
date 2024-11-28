@@ -1,4 +1,5 @@
--- Step 1: Create User table (as it's referenced by Student and Instructor)
+-- The User is an abstract Table used to create either Instructor or Student
+-- It uses the ID as a primary key
 CREATE TABLE User (
     ID VARCHAR(255) PRIMARY KEY,       -- Changed ID to the primary key
     Username VARCHAR(255) NOT NULL,   -- Ensure Username is NOT NULL
@@ -8,22 +9,29 @@ CREATE TABLE User (
     DateOfBirth DATE
 );
 
--- Step 2: Create Instructor table (depends on User table)
+-- Instructor is related to the User via Instructor_id
 CREATE TABLE Instructor (
     Instructor_id VARCHAR(255) PRIMARY KEY, -- Changed Instructor_email to Instructor_id
     FOREIGN KEY (Instructor_id) REFERENCES User(ID) ON DELETE CASCADE
 );
 
--- Step 3: Create Course table (Instructor is referenced here)
+-- Course uses course code as a primary key.
+-- Course codes are like the ones in our univeristy: CNG445 for example
+--
+-- There is one instructor per course, so we store only one instructor_id
 CREATE TABLE Course (
-    Course_code VARCHAR(20) PRIMARY KEY, -- Added Course Code (like CNG491 or CNG300)
+    Course_code VARCHAR(20) PRIMARY KEY, -- Added Course Code
     Name VARCHAR(255) NOT NULL,
     Description TEXT,
     Instructor_id VARCHAR(255), -- Added this field because there is one instructor for each course
     FOREIGN KEY (Instructor_id) REFERENCES Instructor(Instructor_id) ON DELETE SET NULL
 );
 
--- Step 4: Create SetOfTask table (depends on Course table)
+-- Set of task has its own id that is automatically incremented when
+-- adding a new set of task.
+--
+-- Each set of task can belong to only one course, so we store one
+-- course code value
 CREATE TABLE SetOfTask (
     Set_of_task_id INT AUTO_INCREMENT PRIMARY KEY, -- Added id to set of tasks
     Name VARCHAR(255) NOT NULL,
@@ -31,7 +39,9 @@ CREATE TABLE SetOfTask (
     FOREIGN KEY (Course_code) REFERENCES Course(Course_code) ON DELETE CASCADE
 );
 
--- Step 5: Create Task table (depends on SetOfTask table)
+-- Task has its own id that auto increments itself when adding a new task
+-- Each task can belong to only one set of task, so we store only one 
+-- set_of_task_id
 CREATE TABLE Task (
     Task_id INT AUTO_INCREMENT PRIMARY KEY, -- Added id to tasks
     Name VARCHAR(255) NOT NULL,
@@ -41,13 +51,14 @@ CREATE TABLE Task (
     FOREIGN KEY (Set_of_task_id) REFERENCES SetOfTask(Set_of_task_id) ON DELETE CASCADE
 );
 
--- Step 6: Create Student table (depends on User table)
+-- Student is related to the User via Student_id
 CREATE TABLE Student (
     Student_id VARCHAR(255) PRIMARY KEY, -- Changed Student_email to Student_id
     FOREIGN KEY (Student_id) REFERENCES User(ID) ON DELETE CASCADE
 );
 
--- Step 7: Create Record table (depends on Student and Task tables)
+-- Each record will have its own id
+-- The record keeps track of students solving particular tasks
 CREATE TABLE Record (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     Student_id VARCHAR(255),
@@ -56,7 +67,10 @@ CREATE TABLE Record (
     FOREIGN KEY (Task_id) REFERENCES Task(Task_id) ON DELETE CASCADE
 );
 
--- Step 8: Create Fixation table (depends on Record table)
+-- Fixation contains x,y, and time of the gaze
+-- 
+-- Each fixation can belong to only one record, so we store only one record
+-- id in this table.
 CREATE TABLE Fixation (
     Gaze_X FLOAT,
     Gaze_Y FLOAT,
@@ -66,7 +80,9 @@ CREATE TABLE Fixation (
     PRIMARY KEY (Record_id, Gaze_Time)
 );
 
--- Step 9: Create StudentCourseTable table (depends on Student and Course tables)
+-- This is additional table to connect students to courses, since
+-- one student can be registered to multiple courses, and courses
+-- can have multiple registered students.
 CREATE TABLE StudentCourseTable (
     Student_id VARCHAR(255),
     Course_code VARCHAR(20),

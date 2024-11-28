@@ -49,7 +49,6 @@ def test_code():
 # ========================
 @app.route("/store", methods=["POST"])
 def store():
-    global LAST_RECORD
     today = datetime.datetime.today().strftime('%d/%m/%Y')
     db_cursor.execute(
         "INSERT INTO Record (Student_id, Task_id) VALUES (%s, %s)",
