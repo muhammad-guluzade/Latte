@@ -4,12 +4,6 @@ import datetime
 
 # Creating an app that runs the entire localhost server
 app = Flask(__name__)
-LAST_RECORD = None
-
-with app.app_context():
-    db_cursor.execute("SELECT Id FROM Record")
-    LAST_RECORD = len(db_cursor.fetchall())
-    print(LAST_RECORD)
 
 
 
@@ -61,14 +55,14 @@ def store():
         "INSERT INTO Record (Student_id, Task_id) VALUES (%s, %s)",
         (request.json[0]["student_id"], request.json[0]["task_id"])
     )
-    db.commit()
-    LAST_RECORD += 1
+    db_cursor.execute("SELECT LAST_INSERT_ID()")
+    id = db_cursor.fetchone()[0]
     for dictionary in request.json:
         db_cursor.execute(
             "INSERT INTO Fixation (Gaze_X, Gaze_Y, Gaze_Time, Record_id) VALUES (%s, %s, %s, %s)",
-            (dictionary['x'], dictionary['y'], f"{dictionary['t']} {today}", LAST_RECORD)
+            (dictionary['x'], dictionary['y'], f"{dictionary['t']} {today}", id)
         )
-        db.commit()
+    db.commit()
     return "200"
 # ========================
 
