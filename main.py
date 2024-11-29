@@ -45,7 +45,7 @@ def test_code():
 # For now, /store is the only one method in the website used with AJAX
 # in order to store the gaze into the database.
 # It receives a list of 20 dictionaries, and stores the received data
-# into solve_table table inside Latte database.
+# into Record->Fixation table inside Latte database.
 # ========================
 @app.route("/store", methods=["POST"])
 def store():
