@@ -62,26 +62,30 @@ function calcAccuracy() {
                 var precision_measurement = calculatePrecision(past50);
                 var accuracyLabel = "<a>Accuracy | "+precision_measurement+"%</a>";
                 document.getElementById("Accuracy").innerHTML = accuracyLabel; // Show the accuracy in the nav bar.
+
+                var message_to_user;
+                var calibration_complete;
+                if(precision_measurement < 40){
+                  message_to_user = `Sorry, your accuracy measurement is ${precision_measurement}%, you need to recalibrate`;
+                  calibration_complete = false;
+                }
+                else{
+                  message_to_user = `Your accuracy measurement is ${precision_measurement}%, you can proceed`;
+                  calibration_complete = true;
+                }
                 swal({
-                    title: "Your accuracy measure is " + precision_measurement + "%",
+                    title: message_to_user,
                     allowOutsideClick: false,
                     buttons: {
-                        cancel: "Recalibrate",
                         confirm: true,
                     }
                 }).then(isConfirm => {
-                        if (isConfirm){
-                            //clear the calibration & hide the last middle button
-                            ClearCanvas();
-                        } else {
-                            //use restart function to restart the calibration
-                            document.getElementById("Accuracy").innerHTML = "<a>Not yet Calibrated</a>";
-                            webgazer.clearData();
-                            ClearCalibration();
-                            ClearCanvas();
-                            ShowCalibrationPoint();
+                        if(!calibration_complete){
+                          redirect_to_page("/calibration");
                         }
-                        redirect_to_code_page();
+                        else{
+                          redirect_to_page("/test_code")
+                        }
                 });
                 
         });
@@ -180,6 +184,6 @@ function sleep (time) {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
 
-function redirect_to_code_page() {
-  window.location.replace("/test_code");
+function redirect_to_page(page_url) {
+  window.location.replace(page_url);
 }
