@@ -1,0 +1,204 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #c6bbae;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    background-color: #e6e2dc;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-container {
+    width: 100%;
+    max-width: 400px;
+    background-color: #e6e2dc;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-links {
+    list-style: none;
+    padding: 0;
+    text-align: center;
+}
+
+.dashboard-links li {
+    padding: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dashboard-links a {
+    display: inline-block;
+    width: 100%;
+    padding: 10px;
+    text-decoration: none;
+    color: #fff;
+    border: none;
+    background-color: #b8aa9a;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.dashboard-links a:hover {
+    background-color: #ae9f8c;
+}
+
+h1,
+h2,
+h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.label {
+    font-size: 14px;
+    color: #555;
+}
+
+
+input[type="text"],
+textarea,
+select,
+input[type="name"],
+input[type="surname"],
+input[type="dateofbirth"],
+input[type="id"],
+input[type="username"],
+input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    margin-right: 10px;
+}
+
+input:focus {
+    border-color: #b8aa9a;
+    outline: none;
+}
+
+.btn {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    background-color: #b8aa9a;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #ae9f8c;
+}
+
+.redirect {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.redirect a {
+    color: #b8aa9a;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.redirect a:hover {
+    color: #ae9f8c;
+}
+
+.confirmation-message {
+    margin-top: 15px;
+    padding: 10px;
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 5px;
+    text-align: center;
+    display: none;
+    /* Hidden by default */
+    font-size: 14px;
+}
+
+.inlineContent {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    width: 100%;
+}
+
+.inlineContent div {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.hidden-section {
+    display: none;
+}
+
+ul#courseList,
+ul#taskSetList {
+    list-style: none;
+    padding-left: 0;
+}
+
+ul li {
+    padding: 10px;
+    background-color: #e6e2dc;
+    margin-bottom: 10px;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+ul li a {
+    color: #f9f9f9;
+    background-color: #b8aa9a;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+ul li a:hover {
+    background-color: #ae9f8c;
+    color: #fff;
+}
