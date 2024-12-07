@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/css/stylePages.css">
+    <title>Course Details</title>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <h2>Course Details</h2>
+        <form id="courseDetailsForm">
+            <div class="input-group">
+                <label for="courseName">Course Name</label>
+                <input type="text" id="courseName" name="courseName" required>
+            </div>
+            <div class="input-group">
+                <label for="courseDescription">Course Description</label>
+                <textarea id="courseDescription" name="courseDescription" required></textarea>
+            </div>
+            <button type="submit" class="btn">Update Course</button>
+            <p id="updateConfirmation" class="confirmation-message">Course updated successfully!</p>
+        </form>
+    </div>
+    <script src="static/js/script.js"></script>
+</body>
+
+</html>
