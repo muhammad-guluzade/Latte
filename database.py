@@ -4,6 +4,9 @@
 # This file assumes the database Latte is created and all of the
 # tables are created as well
 
+# Also, you shall change the user and password parameters
+# inside mysql.connector.connect
+
 # If not, to create database, execute
 # CREATE DATABASE Latte;
 # Inside cmd folder after logging into mysql
