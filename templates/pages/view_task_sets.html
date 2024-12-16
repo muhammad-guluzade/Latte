@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Task Sets</title>
+    <link rel="stylesheet" href="../../static/css/stylePages.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        {% include "./pages/navbar.html" %}
+        <h2>View and Manage Task Sets</h2>
+        <ul id="taskSetList"></ul> <!-- Task sets will be loaded here dynamically -->
+    </div>
+    <script>
+        var taskSets = {{ task_sets|tojson }};
+        console.log(taskSets);
+    </script>
+    <script src="../../static/js/script.js"></script>
+</body>
+
+</html>
