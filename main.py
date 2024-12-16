@@ -1,11 +1,10 @@
-import io
 from functools import wraps
 from flask import Flask, render_template, request, redirect, session
 # from database import cursor, db
 import datetime
 from pygments import highlight
 from pygments.formatters import HtmlFormatter, ImageFormatter
-from pygments.lexers import CLexer
+from pygments.lexers import CLexer, JavaLexer
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,6 +22,7 @@ cursor = conn.cursor()
 app = Flask(__name__)
 app.secret_key = "123"
 PLACEHOLDER = "?"
+LEXER = JavaLexer()
 
 
 # Some test stuff
@@ -34,6 +34,17 @@ def login_required(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
         if "latte_user" not in session:
+            return redirect("/")  # Redirect to the index route ("/")
+        return func(*args, **kwargs)
+    return decorated_function
+
+
+def instructor_only(func):
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        if "user_type" not in session:
+            return redirect("/")
+        if session["user_type"] != "i":
             return redirect("/")  # Redirect to the index route ("/")
         return func(*args, **kwargs)
     return decorated_function
@@ -74,6 +85,7 @@ def test_code():
 # ========================
 @app.route("/add_students_to_course", methods=["GET", "POST"])
 @login_required
+@instructor_only
 def add_students_to_course():
     if request.method == "POST":
         if cursor.execute(f"SELECT student_username, course_code FROM StudentCourseTable WHERE student_username='{request.form.get('singleStudent')}' AND course_code='{request.form.get('courseSelect')}'").fetchone():
@@ -94,6 +106,7 @@ def add_students_to_course():
 # ========================
 @app.route("/course_details/<course_code>", methods=["GET", "POST"])
 @login_required
+@instructor_only
 def course_details(course_code):
     if request.method == "POST":
         cursor.execute(
@@ -111,6 +124,7 @@ def course_details(course_code):
 # ========================
 @app.route("/create_course", methods=["GET", "POST"])
 @login_required
+@instructor_only
 def create_course():
     students = [item[0] for item in cursor.execute(f"SELECT student_username FROM Student").fetchall()]
     if request.method == "GET":
@@ -150,6 +164,7 @@ def create_course():
 # ========================
 @app.route("/generate_report", methods=["GET", "POST"])
 @login_required
+@instructor_only
 def generate_report():
     students = [item[0] for item in cursor.execute("SELECT student_username FROM Student").fetchall()]
     if request.method == "GET":
@@ -227,6 +242,7 @@ def signup():
 # ========================
 @app.route("/task_set_details/<set_of_task_id>", methods=["GET", "POST"])
 @login_required
+@instructor_only
 def task_set_details(set_of_task_id):
     if request.method == "POST":
         cursor.execute(
@@ -239,9 +255,24 @@ def task_set_details(set_of_task_id):
     return render_template("pages/task_set_details.html", set_of_task=set_of_task)
 # ========================
 
+
+@app.route("/add_task/<set_of_task_id>", methods=["GET", "POST"])
+@login_required
+@instructor_only
+def add_task(set_of_task_id):
+    if request.method == "GET":
+        return render_template("pages/add_task.html", set_of_task=set_of_task_id)
+    cursor.execute(
+        f"INSERT INTO Task (name,Description, task_content, Answer, set_of_task_id) VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})",
+        (request.form.get("taskName"), request.form.get("taskDescription"), request.form.get("taskContent"),request.form.get("taskAnswer"), set_of_task_id)
+    )
+    conn.commit()
+    return redirect(f"/task_set_details/{set_of_task_id}")
+
 # ========================
 @app.route("/view_courses", methods=["GET"])
 @login_required
+@instructor_only
 def view_courses():
     courses = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'").fetchall()]
     return render_template("pages/view_courses.html", courses=courses)
@@ -250,6 +281,7 @@ def view_courses():
 # ========================
 @app.route("/view_task_sets", methods=["GET"])
 @login_required
+@instructor_only
 def view_task_sets():
     course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'").fetchall()]
     task_sets = []
@@ -280,12 +312,21 @@ def task_set(task_set_id):
 @app.route("/task/<task_id>")
 @login_required
 def task(task_id):
+    if "calibrated" not in session:
+        return render_template("calibration.html", task_id=task_id)
+
     task = cursor.execute(f"SELECT name, description, task_content FROM Task WHERE task_id={task_id}").fetchone()
 
     html_formatter = HtmlFormatter(style='default')
-    image_formatter = ImageFormatter(style='default')
-    task_content = highlight(task[2], CLexer(), html_formatter)
-    image_content = highlight(task[2], CLexer(), image_formatter)
+    image_formatter = ImageFormatter(
+        style='default',  # You can experiment with styles like 'monokai' or 'friendly'
+        linenos=False,  # Disable line numbers
+        background_color="#ffffff",  # Set a solid background color (white)
+        font_size=12,  # Optional: adjust font size
+        line_height=1.2  # Optional: Adjust line height if necessary
+    )
+    task_content = highlight(task[2], LEXER, html_formatter)
+    image_content = highlight(task[2], LEXER, image_formatter)
 
     with open("image.png", "wb") as image_file:
         image_file.write(image_content)
@@ -295,6 +336,7 @@ def task(task_id):
 
 @app.route("/generate_heatmap/<student_username>/<task_id>/<time>")
 @login_required
+@instructor_only
 def generate_heatmap(student_username, task_id, time):
     image = Image.open("image.png")
     width = image.width
@@ -367,7 +409,16 @@ def logout():
 # It receives a list of 20 dictionaries, and stores the received data
 # into Record->Fixation table inside Latte database.
 # ========================
+
+
+@app.route("/add_calibration_success", methods=["POST"])
+@login_required
+def add_calibration_success():
+    session["calibrated"] = True
+    return "200"
+
 @app.route("/store", methods=["POST"])
+@login_required
 def store():
     now = datetime.datetime.now()
     now = now.strftime("%H:%M:%S.%f")[:-3] + " " + now.strftime("%d/%m/%Y")

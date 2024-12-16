@@ -17,7 +17,8 @@
                 <label for="taskSetName">Task Set Name</label>
                 <input type="text" id="taskSetName" name="taskSetName" value="{{ set_of_task[1] }}" required>
             </div>
-            <button type="submit" class="btn">Update Task Set</button>
+            <button type="submit" class="btn">Update Task Set Name</button>
+            <a href="/add_task/{{ set_of_task[0] }}" class="btn">Add task</a>
             <p id="taskSetUpdateConfirmation" class="confirmation-message">Task set updated successfully!</p>
         </form>
         <br>

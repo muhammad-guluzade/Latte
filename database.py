@@ -4,6 +4,10 @@ import sqlite3
 conn = sqlite3.connect("db.db")
 cursor = conn.cursor()
 
+cursor.execute("DELETE FROM TaskDimensions WHERE student_username='amin'")
+conn.commit()
+exit()
+
 
 # Creating the database
 with open("./static/db/LatteTables.sql", "r") as file:

@@ -162,7 +162,6 @@ function showConfirmation(event) {
     event.preventDefault(); // Prevent form submission for demonstration purposes
 
     // Get the input field values
-    const id = document.getElementById("id").value.trim();
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
     const confirmPassword = document.getElementById("confirm_password").value.trim();
@@ -170,7 +169,7 @@ function showConfirmation(event) {
     let form = document.getElementById("signupForm");
 
     // Validate the inputs
-    if (!id || !username || !password || !confirmPassword) {
+    if (!username || !password || !confirmPassword) {
         alert("Please fill out all fields.");
         return;
     }

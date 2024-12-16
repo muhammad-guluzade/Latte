@@ -65,7 +65,7 @@ function calcAccuracy() {
 
                 var message_to_user;
                 var calibration_complete;
-                if(precision_measurement < 40){
+                if(precision_measurement < 10){
                   message_to_user = `Sorry, your accuracy measurement is ${precision_measurement}%, you need to recalibrate`;
                   calibration_complete = false;
                 }
@@ -84,7 +84,16 @@ function calcAccuracy() {
                           redirect_to_page("/calibration");
                         }
                         else{
-                          redirect_to_page("/test_code")
+                          let xml_http = new XMLHttpRequest();
+                          xml_http.open("POST", "/add_calibration_success", true);
+                          xml_http.setRequestHeader("Content-Type", "application/json");
+
+                          xml_http.onload = function () {
+                            if (xml_http.status >= 200 && xml_http.status < 300) {
+                                redirect_to_page(`/task/${task_id}`);
+                            }
+                           };
+                          xml_http.send(JSON.stringify("1"));
                         }
                 });
                 
