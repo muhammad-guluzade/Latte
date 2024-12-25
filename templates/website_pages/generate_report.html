@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Report</title>
+    <link rel="stylesheet" href="../../static/css/stylePages.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        {% include "./show_flashed_messages.html" %}
+        {% include "./website_pages/navbar.html" %}
+        <h2>Generate Report</h2>
+        <form id="reportForm" method="post" action="/generate_report">
+            <!-- Report Type Selection -->
+            <div class="input-group">
+                <label for="reportType">Report Type</label>
+                <select id="reportType" name="reportType" onchange="change_generate_url()" required>
+                    <option value="">Select Report Type</option>
+                    <option value="individual">Individual Report</option>
+                    <option value="group">Group Report</option>
+                </select>
+            </div>
+
+            <!-- Individual Report Section with Search (hidden by default) -->
+            <div id="individualReportSection" class="hidden-section">
+                <h3>Select Student for Individual Report</h3>
+                <label for="individualStudentSearch">Search for Student</label>
+                <input type="text" id="individualStudentSearch" placeholder="Type to search..."
+                    oninput="filterStudents('individualStudentList', 'individualStudentSearch')">
+                <select id="individualStudentList" name="individualStudent">
+
+                </select>
+            </div>
+
+            <!-- Group Report Section with Search (hidden by default) -->
+            <div id="groupReportSection" class="hidden-section">
+                <h3>Select Students for Group Report</h3>
+                <label for="groupStudentSearch">Search for Students</label>
+                <input type="text" id="groupStudentSearch" placeholder="Type to search..."
+                    oninput="filterStudents('groupStudentList', 'groupStudentSearch')">
+                <div id="groupStudentList">
+
+                </div>
+            </div>
+
+            <button type="submit" class="btn">Generate Report</button>
+            <p id="reportConfirmationMessage" class="confirmation-message">Report generated successfully!</p>
+        </form>
+    </div>
+    <script>
+        function change_generate_url(){
+            let report_type_select = document.getElementById("reportType");
+            let form = document.getElementById("reportForm");
+
+            if(report_type_select.value === "individual"){
+                form.action = "/generate_heatmap_individual";
+            }
+            else{
+                form.action = "/generate_heatmap_group";
+            }
+        }
+
+        let students_select_individual = document.getElementById("individualStudentList");
+        let students_select_group = document.getElementById("groupStudentList");
+        let students = {{ students|tojson }};
+
+        for(let i = 0; i < students.length; i++){
+            students_select_individual.innerHTML +=  `<option value="${students[i]}">${students[i]}</option>`;
+
+            students_select_group.innerHTML += `<div class="input-group">
+                                                <input type="checkbox" id="groupStudent${i + 1}" name="groupStudent${i + 1}" value="${students[i]}">
+                                                <label for="groupStudent${i + 1}">${students[i]}</label>
+                                            </div>`;
+        }
+    </script>
+    <script src="../../static/js/script.js"></script>
+</body>
+
+</html>
