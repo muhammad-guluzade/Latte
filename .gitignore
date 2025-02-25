@@ -1,3 +1,7 @@
 database_inserter.py
 __pycache__/
 test.py
+templates/test_pages/
+.idea
+.venv
+venv
