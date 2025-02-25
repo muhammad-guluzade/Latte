@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Students to Course</title>
+    <link rel="stylesheet" href="../../static/css/stylePages.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <div class="navigationStyle">
+            <img src="https://static.thenounproject.com/png/1160931-200.png">
+            {% include "./website_pages/navbar.html" %}
+        </div>
+        <h2>Add Students to Course</h2>
+        <form id="addStudentsForm" method="post" action="/add_students_to_course">
+            <!-- Course Selection -->
+            <div class="input-group">
+                <label for="courseSelect">Select a Course</label>
+                <select id="courseSelect" name="courseSelect" required>
+
+                </select>
+            </div>
+
+            <!-- Add Single or Multiple Students -->
+            <div class="input-group">
+                <input type="radio" id="addSingleStudent" name="addStudentType" value="single" required>
+                <label for="addSingleStudent">Add Single Student</label>
+            </div>
+            <div class="input-group">
+                <input type="radio" id="addMultipleStudents" name="addStudentType" value="multiple" required>
+                <label for="addMultipleStudents">Add Multiple Students</label>
+            </div>
+
+            <!-- Single Student Selection with Search (hidden by default) -->
+            <div id="singleStudentSection" class="hidden-section">
+                <label for="singleStudentSearch">Search for Student</label>
+                <input type="text" id="singleStudentSearch" placeholder="Type to search..."
+                    oninput="filterStudents('singleStudentList', 'singleStudentSearch')">
+                <select id="singleStudentList" name="singleStudent">
+
+                </select>
+            </div>
+
+            <!-- Multiple Students Selection with Search (hidden by default) -->
+            <div id="multipleStudentsSection" class="hidden-section">
+                <label for="multipleStudentSearch">Search for Students</label>
+                <input type="text" id="multipleStudentSearch" placeholder="Type to search..."
+                    oninput="filterStudents('multipleStudentList', 'multipleStudentSearch')">
+                <div id="multipleStudentList">
+
+                </div>
+            </div>
+
+            <button type="submit" class="btn">Add Student(s) to Course</button>
+            <p id="addStudentConfirmation" class="confirmation-message">Students added to course successfully!</p>
+        </form>
+        {% include "./show_flashed_messages.html" %}
+    </div>
+    <script>
+        let select_form = document.getElementById("courseSelect");
+        let students_form = document.getElementById("singleStudentList");
+        let courses = {{ courses|tojson }};
+        let students = {{ students|tojson }};
+
+        let students_select_multiple = document.getElementById("multipleStudentList");
+
+        for(let i = 0; i < courses.length;i++){
+            select_form.innerHTML += `<option value="${courses[i]}">${courses[i]}</option>`;
+        }
+
+        for(let i = 0; i < students.length; i++){
+            students_form.innerHTML += `<option value="${students[i]}">${students[i]}</option>`;
+            students_select_multiple.innerHTML += `<div class="input-group">
+                            <input type="checkbox" id="groupStudent${i + 1}" name="groupStudent${i + 1}" value="${students[i]}">
+                            <label for="groupStudent${i + 1}">${students[i]}</label>
+                        </div>`;
+        }
+    </script>
+    <script src="../../static/js/script.js"></script>
+</body>
+
+</html>
