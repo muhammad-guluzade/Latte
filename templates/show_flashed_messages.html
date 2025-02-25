@@ -1,0 +1,11 @@
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="flashed-messages">
+      {% for message in messages %}
+        {% if "path_11001101" not in message %}
+          <p class="flashed-message">{{ message }}</p>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
