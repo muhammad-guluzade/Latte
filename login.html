@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../static/css/stylePages.css">
+    <title>Login</title>
+</head>
+
+<body>
+    <div class="form-container" id="page2">
+        <form action="/login" method="post" class="form">
+            <h2>Login</h2>
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input type="username" id="username" name="username" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn">Login</button>
+            <p class="redirect">Don't have an account? <a href="/signup">Sign Up</a></p>
+        </form>
+        {% include "./show_flashed_messages.html" %}
+    </div>
+    <script src="../../static/js/script.js"></script>
+</body>
+</html>

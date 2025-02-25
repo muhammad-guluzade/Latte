@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="../../static/css/stylePages.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        {% if "latte_user" in session %}
+            <a href="/logout">Log out</a>
+        {% endif %}
+        <h1>Admin Panel</h1>
+
+        <!-- Admin Form -->
+        <div class="admin-form-container">
+            <form action="/signup?admin=true" method="post">
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="username" id="username" name="username" required>
+                    <button type="submit" class="btn">Add Instructor</button>
+                </div>
+            </form>
+        </div>
+    {% include "./show_flashed_messages.html" %}
+    </div>
+    <script src="../../static/js/script.js"></script>
+</body>
+
+</html>

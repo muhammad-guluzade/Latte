@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Task</title>
+    <link rel="stylesheet" href="../../static/css/stylePages.css">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <div class="navigationStyle">
+            <img src="https://static.thenounproject.com/png/1160931-200.png">
+            {% include "./website_pages/navbar.html" %}
+        </div>
+        <h2>Add Task</h2>
+        <form id="addTaskForm" method="post" action="/add_task/{{ set_of_task[0] }}">
+            <div class="input-group">
+                <label for="taskName">Task Name</label>
+                <input type="text" id="taskName" name="taskName" placeholder="Enter task name" required>
+            </div>
+            <div class="input-group">
+                <label for="taskDescription">Task Description</label>
+                <textarea id="taskDescription" name="taskDescription" placeholder="Enter task description" required></textarea>
+            </div>
+            <div class="input-group">
+                <label for="taskContent">Task Content</label>
+                <textarea id="taskContent" name="taskContent" placeholder="Enter task content" required></textarea>
+            </div>
+            <div class="input-group">
+                <label for="taskAnswer">Task Answer</label>
+                <input type="text" id="taskAnswer" name="taskAnswer" placeholder="Enter task answer" required>
+            </div>
+            <button type="submit" class="btn">Submit Task</button>
+        </form>
+        {% include "./show_flashed_messages.html" %}
+    </div>
+    <script src="../../static/js/script.js"></script>
+</body>
+
+</html>
