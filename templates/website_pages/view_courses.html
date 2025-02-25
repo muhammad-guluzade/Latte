@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../static/css/stylePages.css">
+    <title>View Courses</title>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <div class="navigationStyle">
+            <img src="https://static.thenounproject.com/png/1160931-200.png">
+            {% include "./website_pages/navbar.html" %}
+        </div>
+        <h2>View and Manage Courses</h2>
+        <ul id="courseList">
+        </ul> <!-- Courses will be loaded here dynamically -->
+        {% include "./show_flashed_messages.html" %}
+    </div>
+    <script>
+        var courses = {{ courses|tojson }};
+    </script>
+    <script src="../../static/js/script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="../../static/css/stylePages.css">
+
+    <style>
+        .task{
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        {% if "latte_user" in session %}
+            <a href="/logout">Log out</a>
+        {% endif %}
+        <h1>Student Dashboard</h1>
+
+        <!-- Course Selection Section -->
+        <div class="form-container">
+            <h2>Tasks</h2>
+            <div id="taskSetSelect" class="dashboard-links">
+
+            </div>
+        </div>
+
+        <!-- Task List Section (hidden by default) -->
+        <div id="taskListSection" class="hidden-section">
+            <h2>Tasks for Selected Course</h2>
+            <ul id="taskList"></ul>
+        </div>
+    {% include "./show_flashed_messages.html" %}
+    </div>
+
+    <script>
+        let tasks_list = document.getElementById("taskSetSelect");
+        let tasks = {{ tasks|tojson }};
+        for(let i = 0; i < tasks.length; i++){
+            tasks_list.innerHTML += `<a class="task" href="/task/${tasks[i][0]}">${tasks[i][1]}</a>`;
+        }
+    </script>
+    <script src="../../static/js/script.js"></script>
+</body>
+
+</html>
