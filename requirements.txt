@@ -1,0 +1,6 @@
+flask
+pygments
+Pillow
+numpy
+matplotlib
+scikit-image
