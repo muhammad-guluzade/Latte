@@ -4,10 +4,6 @@ if (document.getElementById("courseForm")) {
         document.getElementById("taskSetSection").style.display = this.checked ? "block" : "none";
     });
 
-    document.getElementById("addTasks").addEventListener("change", function () {
-        document.getElementById("tasksSection").style.display = this.checked ? "block" : "none";
-    });
-
     document.getElementById("addStudents").addEventListener("change", function () {
         document.getElementById("studentSection").style.display = this.checked ? "block" : "none";
     });
@@ -24,6 +20,9 @@ if (document.getElementById("courseForm")) {
 
     document.getElementById("courseForm").addEventListener("submit", function (event) {
         event.preventDefault();
+
+        let form = document.getElementById("courseForm");
+        form.submit();
         document.getElementById("confirmationMessage").style.display = "block";
     });
 }
@@ -48,24 +47,21 @@ if (document.getElementById("reportForm")) {
 
     document.getElementById("reportForm").addEventListener("submit", function (event) {
         event.preventDefault();
+        let form = document.getElementById("reportForm");
+        form.submit();
         document.getElementById("reportConfirmationMessage").style.display = "block";
     });
 }
 
 //View Courses Page (view_courses.html)
 if (document.getElementById("courseList")) {
-    const courses = [
-        { id: 1, name: "Course 1" },
-        { id: 2, name: "Course 2" },
-        { id: 3, name: "Course 3" }
-    ];
 
     const courseList = document.getElementById("courseList");
     courses.forEach(course => {
         const listItem = document.createElement("li");
         listItem.innerHTML = `
-            <span>${course.name}</span>
-            <a href="course_details.html?courseId=${course.id}">View Details</a>
+            <span>${course}</span>
+            <a href="/course_details/${course}">View Details</a>
         `;
         courseList.appendChild(listItem);
     });
@@ -73,18 +69,13 @@ if (document.getElementById("courseList")) {
 
 //View Task Sets Page (view_task_sets.html)
 if (document.getElementById("taskSetList")) {
-    const taskSets = [
-        { id: 1, name: "Task Set 1" },
-        { id: 2, name: "Task Set 2" },
-        { id: 3, name: "Task Set 3" }
-    ];
 
     const taskSetList = document.getElementById("taskSetList");
     taskSets.forEach(taskSet => {
         const listItem = document.createElement("li");
         listItem.innerHTML = `
-            <span>${taskSet.name}</span>
-            <a href="task_set_details.html?taskSetId=${taskSet.id}">View Details</a>
+            <span>${taskSet[1]}</span>
+            <a href="/task_set_details/${taskSet[0]}">View Details</a>
         `;
         taskSetList.appendChild(listItem);
     });
@@ -104,6 +95,8 @@ if (document.getElementById("addStudentsForm")) {
 
     document.getElementById("addStudentsForm").addEventListener("submit", function (event) {
         event.preventDefault();
+        let form = document.getElementById("addStudentsForm");
+        form.submit();
         document.getElementById("addStudentConfirmation").style.display = "block";
     });
 }
@@ -119,24 +112,10 @@ function filterStudents(listId, searchInputId) {
     });
 }
 
-//Sample data for courses and task sets
-const courses = [
-    { id: 1, name: "Course 1", description: "Description of Course 1" },
-    { id: 2, name: "Course 2", description: "Description of Course 2" },
-    { id: 3, name: "Course 3", description: "Description of Course 3" }
-];
-
-const taskSets = [
-    { id: 1, name: "Task Set 1", tasks: ["Task 1", "Task 2"] },
-    { id: 2, name: "Task Set 2", tasks: ["Task 3", "Task 4"] },
-    { id: 3, name: "Task Set 3", tasks: ["Task 5", "Task 6"] }
-];
-
 //Course Details Page
 if (document.getElementById("courseDetailsForm")) {
     const urlParams = new URLSearchParams(window.location.search);
     const courseId = parseInt(urlParams.get("courseId"));
-    const course = courses.find(c => c.id === courseId);
 
     if (course) {
         document.getElementById("courseName").value = course.name;
@@ -179,13 +158,19 @@ function showConfirmation(event) {
     event.preventDefault(); // Prevent form submission for demonstration purposes
 
     // Get the input field values
-    const id = document.getElementById("id").value.trim();
+    const name = document.getElementById("name").value.trim();
+    const surname = document.getElementById("surname").value.trim();
+    const dob = document.getElementById("dateofbirth").value.trim();
     const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value.trim();
     const confirmPassword = document.getElementById("confirm_password").value.trim();
 
+    let form = document.getElementById("signupForm");
+
+    let terms_confirm = document.getElementById("confirm_terms");
+
     // Validate the inputs
-    if (!id || !username || !password || !confirmPassword) {
+    if (!name || !surname || !dob || !username || !password || !confirmPassword) {
         alert("Please fill out all fields.");
         return;
     }
@@ -195,8 +180,15 @@ function showConfirmation(event) {
         return;
     }
 
-    //If all validations pass, show the confirmation message
-    const confirmationMessage = document.getElementById("confirmationMessage");
-    confirmationMessage.style.display = "block";
+    if(!terms_confirm.checked){
+        alert("Agree on the terms and conditions first.");
+        return;
+    }
+
+    form.submit();
 }
 
+let inputs = document.getElementsByTagName("input");
+for(let i = 0; i < inputs.length; i++){
+    inputs[i].checked = false;
+}
