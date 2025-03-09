@@ -13,6 +13,8 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage import filters
+from scipy.cluster.hierarchy import linkage, fcluster
+import scipy
 # =================
 
 # !
@@ -319,6 +321,10 @@ def signup():
         # If the user other than admin tries to access this route
         if session['user_type'] != "a":
             flash("You do not have the authority to perform this action")
+            return redirect("/")
+        username = cursor.execute(f"SELECT username FROM User WHERE username='{request.form.get('username')}'").fetchone()
+        if username:
+            flash("This username already exists")
             return redirect("/")
         cursor.execute(
             f"INSERT INTO Instructor (Instructor_username) VALUES ({PLACEHOLDER})",
@@ -778,10 +784,33 @@ def store():
     # cursor.execute("SELECT LAST_INSERT_ID()")
     # id = cursor.fetchone()[0]
     id = cursor.lastrowid
+
+    # Optimizing the gazepoints
+    gaze_data = []
     for dictionary in request.json:
+        gaze_data.append([dictionary['x'], dictionary['y'], dictionary['t']])
+    
+    gaze_points = np.array([[row[0], row[1]] for row in gaze_data])
+    gaze_times = [row[2] for row in gaze_data]
+
+    # The bigger the threshold, the more gazepoints in one area average out to 1 gaze point
+    threshold = 15
+    Z = linkage(gaze_points, method='single')
+    clusters = fcluster(Z, threshold, criterion='distance')
+
+    unique_clusters = set(clusters)
+
+    for cluster_id in unique_clusters:
+        indices = [i for i, c in enumerate(clusters) if c == cluster_id]
+        cluster_points = gaze_points[indices]
+        
+        avg_x = np.mean(cluster_points[:, 0])
+        avg_y = np.mean(cluster_points[:, 1])
+        min_time = min([gaze_times[i] for i in indices])
+
         cursor.execute(
             f"INSERT INTO Fixation (Gaze_X, Gaze_Y, Gaze_Time, Record_id) VALUES ({PLACEHOLDER}, {PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
-            (dictionary['x'], dictionary['y'], f"{dictionary['t']} {now.split()[1]}", id)
+            (avg_x, avg_y, f"{min_time} {now.split()[1]}", id)
         )
     conn.commit()
     return "200"
