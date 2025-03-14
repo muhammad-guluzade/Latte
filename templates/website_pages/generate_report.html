@@ -31,6 +31,16 @@
                 </select>
             </div>
 
+            <!-- Report Format Selection -->
+            <div class="input-group">
+                <label for="reportFormat">Report Format</label>
+                <select id="reportFormat" name="reportFormat" onchange="change_generate_url()" required>
+                    <option value="">Select Report Type</option>
+                    <option value="heatmap">Heatmap</option>
+                    <option value="gazeplot">Gaze Plot</option>
+                </select>
+            </div>
+
             <!-- Individual Report Section with Search (hidden by default) -->
             <div id="individualReportSection" class="hidden-section">
                 <h3>Select Student for Individual Report</h3>
@@ -63,7 +73,7 @@
     </div>
     <div id="heatmap_shower">
         {% if path %}
-            <img src="{{ path }}">
+            <img width="500" src="{{ path }}">
         {% endif %}
     </div>
     <script>
@@ -89,9 +99,14 @@
             if(report_type_select.value === "individual"){
                 form.action = "/generate_heatmap_individual";
             }
-            else{
+            else if (report_type_select.value === "group"){
                 form.action = "/generate_heatmap_group";
             }
+            else{
+                form.action = "/#";
+            }
+
+            console.log(form.action);
         }
 
         let students_select_individual = document.getElementById("individualStudentList");

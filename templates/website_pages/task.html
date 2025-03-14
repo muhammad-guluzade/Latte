@@ -114,9 +114,12 @@
                         let xml_http = new XMLHttpRequest();
                         xml_http.open("POST", "/store", true);
                         xml_http.setRequestHeader("Content-Type", "application/json");
-                        xml_http.onload = function () {
+                        xml_http.onreadystatechange = function () {
+                            gaze_coordinates = [];
+                                console.log(1);
                             if (xml_http.status >= 200 && xml_http.status < 300) {
                                 gaze_coordinates = [];
+                                console.log(1);
                             }
                         };
                         xml_http.send(JSON.stringify(gaze_coordinates));

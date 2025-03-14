@@ -11,6 +11,10 @@
         .task{
             margin-bottom: 0.5rem;
         }
+        
+        .disabled{
+            background-color: gray;
+        }
     </style>
 </head>
 
@@ -40,8 +44,14 @@
     <script>
         let tasks_list = document.getElementById("taskSetSelect");
         let tasks = {{ tasks|tojson }};
+
         for(let i = 0; i < tasks.length; i++){
-            tasks_list.innerHTML += `<a class="task" href="/task/${tasks[i][0]}">${tasks[i][1]}</a>`;
+            if(tasks[i][2] === false){
+                tasks_list.innerHTML += `<a class="task" href="/task/${tasks[i][0]}">${tasks[i][1]}</a>`;
+            }
+            else{
+                tasks_list.innerHTML += `<a style="background-color: gray;" class="task disabled">${tasks[i][1]}</a>`;
+            }
         }
     </script>
     <script src="../../static/js/script.js"></script>
