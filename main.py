@@ -12,9 +12,10 @@ from pygments.lexers import CLexer, JavaLexer, PythonLexer
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 from skimage import filters
 from scipy.cluster.hierarchy import linkage, fcluster
-import scipy
+import random
 # =================
 
 # !
@@ -82,6 +83,7 @@ def catch_sql_error(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
+            print(e)
             flash("Sql error occured")
             return redirect("/")
     return decorated_function
@@ -95,7 +97,7 @@ def catch_sql_error(func):
 # based on the type and whether they are logged in.
 # ========================
 @app.route("/", methods=["GET"])
-@catch_sql_error
+
 def index():
     if "latte_user" not in session:
         return render_template("website_pages/login.html")
@@ -115,7 +117,7 @@ def index():
 @app.route("/add_students_to_course", methods=["GET", "POST"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def add_students_to_course():
     # GET request just shows the students registered in the system and courses of the instructor
     if request.method == "GET":
@@ -160,7 +162,7 @@ def add_students_to_course():
 @app.route("/course_details/<course_code>", methods=["GET", "POST"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def course_details(course_code):
     # GET request shows the courses related to the instructor
     if request.method == "GET":
@@ -186,7 +188,7 @@ def course_details(course_code):
 @app.route("/create_course", methods=["GET", "POST"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def create_course():
     # GET request displays the page with the form for creating a new course and available students to
     # enroll in the new course
@@ -250,7 +252,7 @@ def create_course():
 @app.route("/generate_report", methods=["GET"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def generate_report():
     # GET request displays the form with individual/group selection and the students related to a particular instructor
     if request.method == "GET":
@@ -267,7 +269,7 @@ def generate_report():
 # Logs the user in as an admin, instructor, or student.
 # ========================
 @app.route("/login", methods=["GET", "POST"])
-@catch_sql_error
+
 def login():
     # If the user is already logged in, redirect them to the main page
     if "latte_user" in session:
@@ -314,7 +316,7 @@ def login():
 # This route also serves as a method for admin to add the new instructor to the database
 # ========================
 @app.route("/signup", methods=["GET", "POST"])
-@catch_sql_error
+
 def signup():
     # If the request was issued by admin to add new instructor
     if request.args.get("admin") == "true":
@@ -373,7 +375,7 @@ def signup():
 @app.route("/task_set_details/<set_of_task_id>", methods=["GET", "POST"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def task_set_details(set_of_task_id):
     # GET request shows the set of task name and tasks related to this set of task
     if request.method == "GET":
@@ -401,7 +403,7 @@ def task_set_details(set_of_task_id):
 @app.route("/task_details/<task_id>", methods=["GET", "POST"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def task_details(task_id):
     # GET request shows the task with its details
     if request.method == "GET":
@@ -427,7 +429,7 @@ def task_details(task_id):
 @app.route("/add_task/<set_of_task_id>", methods=["GET", "POST"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def add_task(set_of_task_id):
     # GET request displays the form to add new task
     if request.method == "GET":
@@ -449,7 +451,7 @@ def add_task(set_of_task_id):
 @app.route("/add_task_set/<course_code>", methods=["GET", "POST"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def add_task_set(course_code):
     # GET request displays the form to add new set of task
     if request.method == "GET":
@@ -474,7 +476,7 @@ def add_task_set(course_code):
 @app.route("/view_courses", methods=["GET"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def view_courses():
     courses = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'").fetchall()]
     return render_template("website_pages/view_courses.html", courses=courses)
@@ -487,7 +489,7 @@ def view_courses():
 @app.route("/view_task_sets", methods=["GET"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def view_task_sets():
     course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'").fetchall()]
     print(course_codes)
@@ -503,7 +505,7 @@ def view_task_sets():
 # ========================
 @app.route("/course/<course_code>")
 @login_required
-@catch_sql_error
+
 def course(course_code):
     # If another student tries to view the course contents they are not registered in
     if not cursor.execute(f"SELECT * FROM StudentCourseTable WHERE student_username='{session['latte_user']}' AND course_code='{course_code}'").fetchone():
@@ -519,10 +521,14 @@ def course(course_code):
 # ========================
 @app.route("/task_set/<task_set_id>")
 @login_required
-@catch_sql_error
 def task_set(task_set_id):
     tasks = cursor.execute(f"SELECT task_id, name FROM Task WHERE set_of_task_id='{task_set_id}'").fetchall()
-    return render_template("./website_pages/task_sets_task.html", tasks=tasks)
+    completed_tasks = []
+
+    for task_id, name in tasks:
+        completed_tasks.append((task_id, name, cursor.execute(f"SELECT task_id FROM TaskDimensions WHERE student_username='{session['latte_user']}'").fetchone() != None))
+
+    return render_template("./website_pages/task_sets_task.html", tasks=completed_tasks)
 # ========================
 
 
@@ -531,7 +537,7 @@ def task_set(task_set_id):
 # ========================
 @app.route("/task/<task_id>")
 @login_required
-@catch_sql_error
+
 def task(task_id):
     # If the student did not complete the calibration
     if "calibrated" not in session:
@@ -594,7 +600,7 @@ def generate_and_save_heatmap(heatmap, width, height, student_username, task_id,
 @app.route("/generate_heatmap_individual", methods=["GET", "POST"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def generate_heatmap_individual():
 
     if request.method == "GET":
@@ -618,6 +624,72 @@ def generate_heatmap_individual():
     left_and_top = cursor.execute(f"SELECT left, top FROM TaskDimensions WHERE student_username='{student_username}' AND task_id={task_id} AND time='{time}'").fetchone()
     top = float(left_and_top[1])
     left = float(left_and_top[0])
+
+    if request.form.get("reportFormat") == "gazeplot":
+        # Load the image
+        image = mpimg.imread("./static/media/image.png")
+        image_height, image_width = image.shape[:2]
+
+        users = [request.form.get('individualStudent')]
+        num_users = len(users)
+        colors = ["blue"]
+
+        user_data = {}
+
+        for user, color in zip(users, colors):
+            record_ids = [item[0] for item in cursor.execute(f"SELECT id FROM Record WHERE task_id={task_id} AND student_username='{student_username}'").fetchall()]
+
+            coordinates = []
+            for id in record_ids:
+                coordinates.extend(cursor.execute(f"SELECT Gaze_X, Gaze_Y, Gaze_Time FROM Fixation WHERE Record_id={id}").fetchall())
+
+            gaze_x = np.array([])
+            gaze_y = np.array([])
+            raw_times = []
+
+            for x, y, t in coordinates:
+                if 0 <= x - left < width and 0 <= y - top < height:
+                    gaze_x = np.append(gaze_x, x - left)
+                    gaze_y = np.append(gaze_y, y - top)
+                    raw_times.append(t.split()[0])
+            
+            timestamps = [datetime.datetime.strptime(t, "%H:%M:%S.%f") for t in raw_times]
+
+            fixation_durations = [max(50, (timestamps[i + 1] - timestamps[i]).total_seconds() * 1000) for i in range(len(timestamps) - 1)]
+            fixation_durations.append(fixation_durations[-1])
+
+            min_size, max_size = 100, 500
+            sizes = np.interp(fixation_durations, (min(fixation_durations), max(fixation_durations)), (min_size, max_size))
+
+            user_data[user] = {"x": gaze_x, "y": gaze_y, "timestamps": timestamps, "sizes": sizes, "color": color}
+
+        fig, ax = plt.subplots(figsize=(image_width / 100, image_height / 100), dpi=100)
+        ax.set_xlim(0, image_width)
+        ax.set_ylim(image_height, 0)
+        ax.imshow(image, extent=[0, image_width, image_height, 0], aspect='auto')
+
+        for user, data in user_data.items():
+            ax.plot(data["x"], data["y"], color=data["color"], linestyle='-', linewidth=1, alpha=0.7)
+            ax.scatter(data["x"], data["y"], color=data["color"], s=data["sizes"], edgecolors=data["color"], alpha=0.4, label=user)
+            
+            for i, (x, y) in enumerate(zip(data["x"], data["y"])):
+                ax.text(x, y, str(i + 1), fontsize=8, ha='center', va='center', color='black')
+
+        ax.set_title("")
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        path = "./static/media/gaze_plot.png"
+
+        plt.savefig("./static/media/gaze_plot.png", dpi=300, bbox_inches='tight', pad_inches=0)
+
+        course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
+        students = []
+        for course_code in course_codes:
+            students.extend([item[0] for item in cursor.execute(f"SELECT student_username FROM StudentCourseTable WHERE course_code='{course_code}'").fetchall()])
+
+        return render_template("./website_pages/generate_report.html", path=path, students=students)
+
 
     # Initializing the heatmap as a 2-dimensional table
     heatmap = np.zeros((height, width))
@@ -655,7 +727,7 @@ def generate_heatmap_individual():
 @app.route("/generate_heatmap_group", methods=["GET", "POST"])
 @login_required
 @instructor_only
-@catch_sql_error
+
 def generate_heatmap_group():
 
     if request.method == "GET":
@@ -674,6 +746,94 @@ def generate_heatmap_group():
 
     student_usernames = ""
     task_id = None
+
+    if request.form.get("reportFormat") == "gazeplot":
+        image = mpimg.imread("./static/media/image.png")
+        image_height, image_width = image.shape[:2]
+
+        users = [value for key, value in request.form.items() if "groupStudent" in key]
+        colors = [f'#{random.randint(0, 255):02X}{random.randint(0, 255):02X}{random.randint(0, 255):02X}' for _ in range(len(users))]
+        
+        user_data = {}
+
+        for user, color in zip(users, colors):
+
+            # Selecting the first instance of the student completing some task
+            data = cursor.execute(f"SELECT task_id, student_username, time FROM TaskDimensions WHERE student_username='{user}'").fetchone()
+
+            # Setting up student's username, task id that they completed, and time at which they completed
+            # the task. This gives us uniqueness.
+            student_username = data[1]
+            task_id = data[0]
+            time = data[2]
+
+            student_usernames += f"{student_username}_"
+
+            # Retrieving the dimensions of the screen of the student who was completing the task
+            left_and_top = cursor.execute(f"SELECT left, top FROM TaskDimensions WHERE student_username='{student_username}' AND task_id={task_id} AND time='{time}'").fetchone()
+            top = float(left_and_top[1])
+            left = float(left_and_top[0])
+
+            record_ids = [item[0] for item in cursor.execute(f"SELECT id FROM Record WHERE task_id={task_id} AND student_username='{user}'").fetchall()]
+
+            coordinates = []
+            for id in record_ids:
+                coordinates.extend(cursor.execute(f"SELECT Gaze_X, Gaze_Y, Gaze_Time FROM Fixation WHERE Record_id={id}").fetchall())
+
+            gaze_x = np.array([])
+            gaze_y = np.array([])
+            raw_times = []
+
+            for x, y, t in coordinates:
+                if 0 <= x - left < width and 0 <= y - top < height:
+                    gaze_x = np.append(gaze_x, x - left)
+                    gaze_y = np.append(gaze_y, y - top)
+                    raw_times.append(t.split()[0])
+            
+            timestamps = [datetime.datetime.strptime(t, "%H:%M:%S.%f") for t in raw_times]
+
+            fixation_durations = [max(50, (timestamps[i + 1] - timestamps[i]).total_seconds() * 1000) for i in range(len(timestamps) - 1)]
+            fixation_durations.append(fixation_durations[-1])
+
+            min_size, max_size = 100, 500
+            sizes = np.interp(fixation_durations, (min(fixation_durations), max(fixation_durations)), (min_size, max_size))
+
+            user_data[user] = {"x": gaze_x, "y": gaze_y, "timestamps": timestamps, "sizes": sizes, "color": color}
+
+        fig, ax = plt.subplots(figsize=(image_width / 100 + 3, image_height / 100), dpi=100)  # Add extra width for legend
+        ax.set_xlim(0, image_width)
+        ax.set_ylim(image_height, 0)
+        ax.imshow(image, extent=[0, image_width, image_height, 0], aspect='auto')
+
+        for user, data in user_data.items():
+            ax.plot(data["x"], data["y"], color=data["color"], linestyle='-', linewidth=1, alpha=0.7)
+            ax.scatter(data["x"], data["y"], color=data["color"], s=data["sizes"], edgecolors=data["color"], alpha=0.4, label=user)
+            
+            for i, (x, y) in enumerate(zip(data["x"], data["y"])):
+                ax.text(x, y, str(i + 1), fontsize=8, ha='center', va='center', color='black')
+
+        ax.set_title("")
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+        # Adjust layout to make space for legend
+        fig.subplots_adjust(right=0.8)  # Shift the plot to the left to make space
+
+        # Place legend outside the plot
+        ax.legend(title="Users", loc="center left", bbox_to_anchor=(1, 0.5))
+
+        path = "./static/media/gaze_plot.png"
+
+        # Save the figure
+        plt.savefig(path, dpi=300, bbox_inches='tight', pad_inches=0)
+
+
+        course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
+        students = []
+        for course_code in course_codes:
+            students.extend([item[0] for item in cursor.execute(f"SELECT student_username FROM StudentCourseTable WHERE course_code='{course_code}'").fetchall()])
+
+        return render_template("./website_pages/generate_report.html", path=path, students=students)
 
     for student in selected_students:
         # Selecting the first instance of the student completing some task
@@ -724,7 +884,7 @@ def generate_heatmap_group():
 # ========================
 @app.route("/logout")
 @login_required
-@catch_sql_error
+
 def logout():
     session.pop("latte_user")
     session.pop("user_type")
@@ -734,12 +894,45 @@ def logout():
 
 @app.route("/save_answer/<task_id>", methods=["GET", "POST"])
 @login_required
-@catch_sql_error
 def save_answer(task_id):
     cursor.execute(f"UPDATE Task SET student_answer={PLACEHOLDER} WHERE task_id={task_id}", (request.form.get("answer"),))
     conn.commit()
     return redirect("/")
 
+
+@app.route("/save_csv")
+@login_required
+@instructor_only
+def save_csv():
+    tasks_completed_by_students = set(cursor.execute("SELECT task_id, student_username FROM Record").fetchall())
+    
+    tasks_completed_by_students_with_task_names = []
+
+    for task_id, student_username in tasks_completed_by_students:
+        tasks_completed_by_students_with_task_names.append((task_id, student_username, cursor.execute(f"SELECT name FROM Task WHERE task_id={task_id}").fetchone()[0]))
+
+    return render_template("./website_pages/save_csv.html", tasks_names_and_students=tasks_completed_by_students_with_task_names)
+
+
+@app.route("/save_csv/<student_username>/<task_id>")
+@login_required
+@instructor_only
+def save_csv_specific_student(student_username, task_id):
+    records = [item[0] for item in cursor.execute(f"SELECT id FROM Record WHERE student_username='{student_username}' AND task_id={task_id}").fetchall()]
+    fixations = []
+
+    for record in records:
+        fixations.extend(cursor.execute(f"SELECT * FROM Fixation WHERE record_id={record}").fetchall())
+    
+    with open(f"./static/csv/{student_username}_{task_id}.csv", "w") as file:
+        string = ""
+        for fixation in fixations:
+            string += f"{fixation[0]},{fixation[1]},{fixation[2]},{fixation[3]}\n"
+            cursor.execute(f"DELETE FROM Fixation WHERE record_id={fixation[3]} AND gaze_time='{fixation[2]}'")
+        file.write(string)
+
+    conn.commit()
+    return "200"
 
 # ROUTES FOR PROCESSING DATA WITH AJAX
 
@@ -749,7 +942,7 @@ def save_answer(task_id):
 # ========================
 @app.route("/add_calibration_success", methods=["POST"])
 @login_required
-@catch_sql_error
+
 def add_calibration_success():
     session["calibrated"] = True
     return "200"
@@ -785,7 +978,6 @@ def store():
     # id = cursor.fetchone()[0]
     id = cursor.lastrowid
 
-    # Optimizing the gazepoints
     gaze_data = []
     for dictionary in request.json:
         gaze_data.append([dictionary['x'], dictionary['y'], dictionary['t']])
@@ -810,7 +1002,7 @@ def store():
 
         cursor.execute(
             f"INSERT INTO Fixation (Gaze_X, Gaze_Y, Gaze_Time, Record_id) VALUES ({PLACEHOLDER}, {PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
-            (avg_x, avg_y, f"{min_time} {now.split()[1]}", id)
+            (round(avg_x, 2), round(avg_y, 2), f"{min_time} {now.split()[1]}", id)
         )
     conn.commit()
     return "200"
