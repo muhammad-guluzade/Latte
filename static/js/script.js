@@ -29,19 +29,25 @@ if (document.getElementById("courseForm")) {
 
 //Generate Report Page (generate_report.html)
 if (document.getElementById("reportForm")) {
-    document.getElementById("reportType").addEventListener("change", function () {
+    document.getElementById("reportForm").addEventListener("change", function () {
+        let report_type_select = document.getElementById("reportType");
+        let report_format_select = document.getElementById("reportFormat");
+
         const individualReportSection = document.getElementById("individualReportSection");
         const groupReportSection = document.getElementById("groupReportSection");
 
-        if (this.value === "individual") {
+        if (!report_type_select.value || !report_format_select.value) {
+            individualReportSection.style.display = "none";
+            groupReportSection.style.display = "none";
+            return;
+        }
+
+        if (report_type_select.value === "individual") {
             individualReportSection.style.display = "block";
             groupReportSection.style.display = "none";
-        } else if (this.value === "group") {
+        } else if (report_type_select.value === "group") {
             individualReportSection.style.display = "none";
             groupReportSection.style.display = "block";
-        } else {
-            individualReportSection.style.display = "none";
-            groupReportSection.style.display = "none";
         }
     });
 
