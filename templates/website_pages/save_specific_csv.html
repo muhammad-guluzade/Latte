@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../../static/css/stylePages.css">
+
+    <style>
+        .task{
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        {% include "./website_pages/navbar.html" %}
+        <h1>Tasks completed by students</h1>
+        <div id="taskSetSelect" class="dashboard-links">
+            <a download onclick="" class="task" href="{{ download_link }}">Download CSV file</a>
+            <!-- <a download onclick="setTimeout(delete_csv, 500)" class="task" href="{{ download_link }}">Download CSV file</a> -->
+        </div>
+    </div>
+
+    <script>
+        function delete_csv(){
+            let xml_http1 = new XMLHttpRequest();
+            xml_http1.open("POST", "/delete_csv", true);
+            xml_http1.setRequestHeader("Content-Type", "application/json");
+
+            xml_http1.onreadystatechange = function () {
+                window.location.href = "/save_csv";
+            }
+
+            xml_http1.send(JSON.stringify("1"));
+        }
+    </script>
+</body>
+</html>

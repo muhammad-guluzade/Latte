@@ -8,10 +8,6 @@
     <link rel="stylesheet" href="../../static/css/stylePages.css">
 
     <style>
-        .task{
-            margin-bottom: 0.5rem;
-        }
-        
         .disabled{
             background-color: gray;
         }
@@ -47,10 +43,10 @@
 
         for(let i = 0; i < tasks.length; i++){
             if(tasks[i][2] === false){
-                tasks_list.innerHTML += `<a class="task" href="/task/${tasks[i][0]}">${tasks[i][1]}</a>`;
+                tasks_list.innerHTML += `<li><a class="task" href="/task/${tasks[i][0]}">${tasks[i][1]}</a></li>`;
             }
             else{
-                tasks_list.innerHTML += `<a style="background-color: gray;" class="task disabled">${tasks[i][1]}</a>`;
+                tasks_list.innerHTML += `<li><a style="background-color: gray;" class="task disabled">${tasks[i][1]}</a></li>`;
             }
         }
     </script>

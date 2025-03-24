@@ -13,14 +13,25 @@
     </style>
 </head>
 <body>
-    <div class="form-container">
+    <form class="form-container" action="/save_specific_csv" method="post">
         {% include "./website_pages/navbar.html" %}
         <h1>Tasks completed by students</h1>
-        <div id="taskSetSelect" class="dashboard-links">
-            {% for item in tasks_names_and_students %}
-                <a class="task" href="/save_csv/{{ item[1] }}/{{ item[0] }}">{{ item[1] }}, {{ item[2] }}</a>
-            {% endfor %}
+        <div id="groupReportSection" class="">
+            <input type="text" id="groupStudentSearch" placeholder="Type to search..."
+                oninput="filterStudents('groupStudentList', 'groupStudentSearch')">
+            <div id="groupStudentList">
+                {% for item in tasks_names_and_students %}
+                    <div class="input-group">
+                        <input type="checkbox" id="{{ item[0] }}_{{ item[1] }}" name="{{ item[0] }}_{{ item[1] }}" value="{{ item[0] }}_{{ item[1] }}">
+                        <label for="{{ item[0] }}_{{ item[1] }}">{{ item[1] }}, {{ item[2] }}</label>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
-    </div>
+
+        <button class="btn" type="submit">Generate CSV</button>
+    </form>
+
+    <script src="../../static/js/script.js"></script>
 </body>
 </html>
