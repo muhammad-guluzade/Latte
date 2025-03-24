@@ -16,6 +16,7 @@ import matplotlib.image as mpimg
 from skimage import filters
 from scipy.cluster.hierarchy import linkage, fcluster
 import random
+import os
 # =================
 
 # !
@@ -73,23 +74,6 @@ def instructor_only(func):
 # =================
 
 
-# Wrapper function that ensures that the users who are not logged in
-# as instructors don't get access to the website_pages that were designed for
-# the instructors only
-# =================
-def catch_sql_error(func):
-    @wraps(func)
-    def decorated_function(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            print(e)
-            flash("Sql error occured")
-            return redirect("/")
-    return decorated_function
-# =================
-
-
 # GET AND POST ROUTES
 
 # /
@@ -97,7 +81,6 @@ def catch_sql_error(func):
 # based on the type and whether they are logged in.
 # ========================
 @app.route("/", methods=["GET"])
-
 def index():
     if "latte_user" not in session:
         return render_template("website_pages/login.html")
@@ -110,6 +93,7 @@ def index():
         return render_template("website_pages/dashboards.html", courses=course_codes_for_student)
 # ========================
 
+
 # /add_students_to_course
 # The url that allows instructor to add single or multiple students
 # to the specific course.
@@ -117,7 +101,6 @@ def index():
 @app.route("/add_students_to_course", methods=["GET", "POST"])
 @login_required
 @instructor_only
-
 def add_students_to_course():
     # GET request just shows the students registered in the system and courses of the instructor
     if request.method == "GET":
@@ -451,7 +434,6 @@ def add_task(set_of_task_id):
 @app.route("/add_task_set/<course_code>", methods=["GET", "POST"])
 @login_required
 @instructor_only
-
 def add_task_set(course_code):
     # GET request displays the form to add new set of task
     if request.method == "GET":
@@ -476,7 +458,6 @@ def add_task_set(course_code):
 @app.route("/view_courses", methods=["GET"])
 @login_required
 @instructor_only
-
 def view_courses():
     courses = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'").fetchall()]
     return render_template("website_pages/view_courses.html", courses=courses)
@@ -489,7 +470,6 @@ def view_courses():
 @app.route("/view_task_sets", methods=["GET"])
 @login_required
 @instructor_only
-
 def view_task_sets():
     course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'").fetchall()]
     print(course_codes)
@@ -526,7 +506,7 @@ def task_set(task_set_id):
     completed_tasks = []
 
     for task_id, name in tasks:
-        completed_tasks.append((task_id, name, cursor.execute(f"SELECT task_id FROM TaskDimensions WHERE student_username='{session['latte_user']}'").fetchone() != None))
+        completed_tasks.append((task_id, name, cursor.execute(f"SELECT task_id FROM TaskDimensions WHERE student_username='{session['latte_user']}' AND task_id={task_id}").fetchone() != None))
 
     return render_template("./website_pages/task_sets_task.html", tasks=completed_tasks)
 # ========================
@@ -679,7 +659,7 @@ def generate_heatmap_individual():
         ax.set_xticks([])
         ax.set_yticks([])
 
-        path = "./static/media/gaze_plot.png"
+        path = "../../static/media/gaze_plot.png"
 
         plt.savefig("./static/media/gaze_plot.png", dpi=300, bbox_inches='tight', pad_inches=0)
 
@@ -822,10 +802,10 @@ def generate_heatmap_group():
         # Place legend outside the plot
         ax.legend(title="Users", loc="center left", bbox_to_anchor=(1, 0.5))
 
-        path = "./static/media/gaze_plot.png"
+        path = "../../static/media/gaze_plot.png"
 
         # Save the figure
-        plt.savefig(path, dpi=300, bbox_inches='tight', pad_inches=0)
+        plt.savefig("./static/media/gaze_plot.png", dpi=300, bbox_inches='tight', pad_inches=0)
 
 
         course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
@@ -914,27 +894,52 @@ def save_csv():
     return render_template("./website_pages/save_csv.html", tasks_names_and_students=tasks_completed_by_students_with_task_names)
 
 
-@app.route("/save_csv/<student_username>/<task_id>")
+@app.route("/save_specific_csv", methods=["GET", "POST"])
 @login_required
 @instructor_only
-def save_csv_specific_student(student_username, task_id):
-    records = [item[0] for item in cursor.execute(f"SELECT id FROM Record WHERE student_username='{student_username}' AND task_id={task_id}").fetchall()]
+def save_csv_specific_student():
+    student_and_tasks = [(key.split("_")[0], key.split("_")[1]) for key, value in request.form.items()]
+    
+    records = []
+    filename = "./static/csv/"
+    for task_id, student_username in student_and_tasks:
+        records.extend([item[0] for item in cursor.execute(f"SELECT id FROM Record WHERE student_username='{student_username}' AND task_id={task_id}").fetchall()])
+        filename += f"{student_username}_{task_id}~"
+    filename = filename[:-1]
+    filename += ".csv"
+
     fixations = []
 
     for record in records:
         fixations.extend(cursor.execute(f"SELECT * FROM Fixation WHERE record_id={record}").fetchall())
-    
-    with open(f"./static/csv/{student_username}_{task_id}.csv", "w") as file:
-        string = ""
+
+    with open(filename, "w") as file:
+        string = f"{filename.replace('.csv', '').replace('./static/csv/', '')}\n"
         for fixation in fixations:
             string += f"{fixation[0]},{fixation[1]},{fixation[2]},{fixation[3]}\n"
             cursor.execute(f"DELETE FROM Fixation WHERE record_id={fixation[3]} AND gaze_time='{fixation[2]}'")
         file.write(string)
 
     conn.commit()
-    return "200"
+
+    return render_template("./website_pages/save_specific_csv.html", download_link=f"../.{filename}")
+
 
 # ROUTES FOR PROCESSING DATA WITH AJAX
+
+
+# /delete_csv
+# Send AJAX call to the server to delete the csv file that has been already
+# downloaded.
+# ========================
+@app.route("/delete_csv", methods=["GET", "POST"])
+@login_required
+@instructor_only
+def delete_csv():
+    for filename in os.listdir:
+        os.remove(filename)
+    return "200"
+# ========================
 
 
 # /add_calibration_success
