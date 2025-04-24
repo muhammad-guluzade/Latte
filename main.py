@@ -1,6 +1,7 @@
 
 # Imports
 # =================
+from helpers import process_gaze_data
 from functools import wraps
 from flask import Flask, render_template, request, redirect, session, flash
 # from database import cursor, db
@@ -23,6 +24,9 @@ import os
 # CHANGE TO MYSQL AFTER
 # =========================
 import sqlite3
+
+from helpers import process_gaze_data
+
 conn = sqlite3.connect("db.db", check_same_thread=False)
 cursor = conn.cursor()
 # =========================
@@ -623,25 +627,16 @@ def generate_heatmap_individual():
             for id in record_ids:
                 coordinates.extend(cursor.execute(f"SELECT Gaze_X, Gaze_Y, Gaze_Time FROM Fixation WHERE Record_id={id}").fetchall())
 
-            gaze_x = np.array([])
-            gaze_y = np.array([])
-            raw_times = []
+            # Filter gaze points inside image bounds
+            filtered_coords = [
+                (x - left, y - top, t)
+                for x, y, t in coordinates
+                if 0 <= x - left < width and 0 <= y - top < height
+            ]
+            #call the helper function to process the gaze-points
+            result = process_gaze_data(filtered_coords)
 
-            for x, y, t in coordinates:
-                if 0 <= x - left < width and 0 <= y - top < height:
-                    gaze_x = np.append(gaze_x, x - left)
-                    gaze_y = np.append(gaze_y, y - top)
-                    raw_times.append(t.split()[0])
-            
-            timestamps = [datetime.datetime.strptime(t, "%H:%M:%S.%f") for t in raw_times]
-
-            fixation_durations = [max(50, (timestamps[i + 1] - timestamps[i]).total_seconds() * 1000) for i in range(len(timestamps) - 1)]
-            fixation_durations.append(fixation_durations[-1])
-
-            min_size, max_size = 100, 500
-            sizes = np.interp(fixation_durations, (min(fixation_durations), max(fixation_durations)), (min_size, max_size))
-
-            user_data[user] = {"x": gaze_x, "y": gaze_y, "timestamps": timestamps, "sizes": sizes, "color": color}
+            user_data[user] = {"x": result["x"], "y": result["y"], "timestamps": result["timestamps"], "sizes": result["sizes"], "color": color}
 
         fig, ax = plt.subplots(figsize=(image_width / 100, image_height / 100), dpi=100)
         ax.set_xlim(0, image_width)
