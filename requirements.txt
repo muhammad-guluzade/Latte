@@ -1,6 +1,9 @@
-flask
-pygments
+Flask
+Jinja2
+Pygments
 Pillow
 numpy
 matplotlib
 scikit-image
+scipy
+pandas
