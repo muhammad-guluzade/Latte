@@ -2,7 +2,7 @@
 # Imports
 # =================
 from functools import wraps
-from flask import Flask, render_template, request, redirect, session, flash
+from flask import Flask, render_template, request, redirect, session, flash, jsonify
 # from database import cursor, db
 import datetime
 from jinja2 import Environment
@@ -17,6 +17,10 @@ from skimage import filters
 from scipy.cluster.hierarchy import linkage, fcluster
 import random
 import os
+import threading
+import time
+import smtplib
+import pandas
 # =================
 
 # !
@@ -25,6 +29,12 @@ import os
 import sqlite3
 conn = sqlite3.connect("db.db", check_same_thread=False)
 cursor = conn.cursor()
+# =========================
+
+# EMAIL CREDENTIALS
+# =========================
+USER = "freshmark320@gmail.com"
+PASSWORD = "rdcxrntaniibdmkd"
 # =========================
 
 # Creating an app that runs the entire localhost server
@@ -37,6 +47,7 @@ app.secret_key = "123"
 # by just changing the PLACEHOLDER to '?' for sqlite3 and '%s' for mysql
 # =================
 PLACEHOLDER = "?"
+
 # =================
 
 # !
@@ -299,7 +310,6 @@ def login():
 # This route also serves as a method for admin to add the new instructor to the database
 # ========================
 @app.route("/signup", methods=["GET", "POST"])
-
 def signup():
     # If the request was issued by admin to add new instructor
     if request.args.get("admin") == "true":
@@ -307,10 +317,24 @@ def signup():
         if session['user_type'] != "a":
             flash("You do not have the authority to perform this action")
             return redirect("/")
-        username = cursor.execute(f"SELECT username FROM User WHERE username='{request.form.get('username')}'").fetchone()
+        
+        username = cursor.execute(f"SELECT Instructor_username FROM Instructor WHERE Instructor_username='{request.form.get('username')}'").fetchone()
         if username:
             flash("This username already exists")
             return redirect("/")
+        
+        try:
+            with smtplib.SMTP("smtp.gmail.com", 587) as connection:
+                connection.starttls()
+                connection.login(user=USER, password=PASSWORD)
+                
+                mail = f"Subject:Latte - Username Added Alert\n\nYour username has been added to the system. You can now register as an instructor. \n Your username: {request.form.get('username')}"
+                connection.sendmail(from_addr=USER, to_addrs=request.form.get("email"), msg=mail)
+        except Exception as e:
+            print(f"{e}")
+            flash("The email could not be sent. The user not added")
+            return redirect("/")
+        
         cursor.execute(
             f"INSERT INTO Instructor (Instructor_username) VALUES ({PLACEHOLDER})",
             (request.form.get("username"), )
@@ -519,25 +543,13 @@ def task_set(task_set_id):
 @login_required
 
 def task(task_id):
+    session['calibrated'] = True
     # If the student did not complete the calibration
     if "calibrated" not in session:
         return render_template("calibration.html", task_id=task_id)
 
     # Selecting the task from the database
     task = cursor.execute(f"SELECT name, description, task_content FROM Task WHERE task_id={task_id}").fetchone()
-
-    # Saving the task as an image of highlighted code to later be formatted as a heatmap
-    image_formatter = ImageFormatter(
-        style='default',
-        linenos=False,
-        background_color="#ffffff",
-        font_size=12,
-        line_height=1.2
-    )
-    image_content = highlight(task[2], LEXER, image_formatter)
-
-    with open("./static/media/image.png", "wb") as image_file:
-        image_file.write(image_content)
 
     # Formatting the task content as a highlighted code to be displayed as text on
     # the html page
@@ -548,16 +560,49 @@ def task(task_id):
 # ========================
 
 
+def generate_image_for_task(task_id):
+    task = cursor.execute(f"SELECT name, task_content FROM Task WHERE task_id={task_id}").fetchone()
+
+    # Saving the task as an image of highlighted code to later be formatted as a heatmap
+    image_formatter = ImageFormatter(
+        style='default',
+        linenos=False,
+        background_color="#ffffff",
+        font_size=12,
+        line_height=1.2
+    )
+    image_content = highlight(task[1], LEXER, image_formatter)
+
+    path = f"./static/media/{task[0]}.png"
+
+    with open(path, "wb") as image_file:
+        image_file.write(image_content)
+
+    return path
+
+
+def delete_image(path):
+    time.sleep(3)
+    os.remove(path)
+
+
+@app.route("/highlight_some_parts")
+@login_required
+def highlight_some_parts():
+    task_content = cursor.execute(f"SELECT task_content FROM Task WHERE task_id={request.args.get('task_id')}").fetchone()[0]
+    return render_template("/website_pages/highlight_task.html", task_content=task_content, i_or_g=request.args.get("type"))
+
+
 # Formats the image and adds the heatmap over it based on the calculated values (heatmap)
 # and width and height of the image
 # ========================
-def generate_and_save_heatmap(heatmap, width, height, student_username, task_id, time=""):
+def generate_and_save_heatmap(heatmap, width, height, student_username, task_id, path_to_temp_image, time=""):
     time = time.replace("/", "-").replace(":", ".")
 
     smoothed_heatmap = filters.gaussian(heatmap, sigma=15)
     smoothed_heatmap_normalized = smoothed_heatmap / smoothed_heatmap.max()
 
-    image = Image.open("./static/media/image.png").convert("RGBA")
+    image = Image.open(path_to_temp_image).convert("RGBA")
     image = image.resize((width, height))
 
     colormap = plt.cm.jet(smoothed_heatmap_normalized)
@@ -566,11 +611,11 @@ def generate_and_save_heatmap(heatmap, width, height, student_username, task_id,
     overlay = Image.fromarray(colormap).convert("RGBA")
     blended = Image.blend(image, overlay, alpha=0.5)
 
-    blended.save(f"./static/media/heatmap_{student_username}_{task_id}_{time}.png")
+    blended.save(f"./static/media/heatmap.png")
 
     flash("Report generated successfully")
 
-    return f"../../static/media/heatmap_{student_username}_{task_id}_{time}.png"
+    return f"../../static/media/heatmap.png"
 # ========================
 
 
@@ -580,14 +625,17 @@ def generate_and_save_heatmap(heatmap, width, height, student_username, task_id,
 @app.route("/generate_heatmap_individual", methods=["GET", "POST"])
 @login_required
 @instructor_only
-
 def generate_heatmap_individual():
 
     if request.method == "GET":
         return redirect("/generate_report")
+    
+    if "highlights" in request.form:
+        print(request.form.get("highlights"))
+        return "200"
 
     # Selecting the first instance of the student completing some task
-    data = cursor.execute(f"SELECT task_id, student_username, time FROM TaskDimensions WHERE student_username='{request.form.get('individualStudent')}'").fetchone()
+    data = cursor.execute(f"SELECT task_id, student_username, time FROM TaskDimensions WHERE student_username='{request.form.get('individualStudent')}' AND task_id={request.form.get('taskSelect')}").fetchone()
 
     # Setting up student's username, task id that they completed, and time at which they completed
     # the task. This gives us uniqueness.
@@ -595,8 +643,10 @@ def generate_heatmap_individual():
     task_id = data[0]
     time = data[2]
 
+    path_to_temp_image = generate_image_for_task(task_id)
+
     # Opening the unformatted image (without heatmap) and taking its width and height
-    image = Image.open("./static/media/image.png")
+    image = Image.open(path_to_temp_image)
     width = image.width
     height = image.height
 
@@ -607,7 +657,7 @@ def generate_heatmap_individual():
 
     if request.form.get("reportFormat") == "gazeplot":
         # Load the image
-        image = mpimg.imread("./static/media/image.png")
+        image = mpimg.imread(path_to_temp_image)
         image_height, image_width = image.shape[:2]
 
         users = [request.form.get('individualStudent')]
@@ -622,6 +672,16 @@ def generate_heatmap_individual():
             coordinates = []
             for id in record_ids:
                 coordinates.extend(cursor.execute(f"SELECT Gaze_X, Gaze_Y, Gaze_Time FROM Fixation WHERE Record_id={id}").fetchall())
+
+            # IN CASE CSV SHALL BE ADDED
+            if not coordinates:
+                if "csvFile" not in request.files:
+                    flash("For the following student, you shall add the external csv file")
+                    return redirect("/generate_report")
+                df = pandas.read_csv(request.files["csvFile"])
+
+                for index, row in df.iloc[1:].iterrows():
+                    coordinates.append(index)
 
             gaze_x = np.array([])
             gaze_y = np.array([])
@@ -668,6 +728,8 @@ def generate_heatmap_individual():
         for course_code in course_codes:
             students.extend([item[0] for item in cursor.execute(f"SELECT student_username FROM StudentCourseTable WHERE course_code='{course_code}'").fetchall()])
 
+        threading.Thread(target=delete_image, args=(path_to_temp_image,)).start()
+
         return render_template("./website_pages/generate_report.html", path=path, students=students)
 
 
@@ -683,6 +745,16 @@ def generate_heatmap_individual():
     for id in record_ids:
         coordinates.extend(cursor.execute(f"SELECT Gaze_X,Gaze_Y FROM Fixation WHERE Record_id={id}").fetchall())
 
+    # IN CASE CSV SHALL BE ADDED
+    if not coordinates:
+        if "csvFile" not in request.files:
+            flash("For the following student, you shall add the external csv file")
+            return redirect("/generate_report")
+        df = pandas.read_csv(request.files["csvFile"])
+
+        for index, row in df.iloc[1:].iterrows():
+            coordinates.append((index[0], index[1]))
+
     # Generating the heatmap based on the width and height of the image and coordinates
     # of the gaze points
     for x, y in coordinates:
@@ -690,12 +762,14 @@ def generate_heatmap_individual():
             heatmap[int(y - top), int(x - left)] += 1
 
     # Saving the heatmap
-    path = generate_and_save_heatmap(heatmap, width, height, student_username, task_id, time)
+    path = generate_and_save_heatmap(heatmap, width, height, student_username, task_id, path_to_temp_image, time)
 
     course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
     students = []
     for course_code in course_codes:
         students.extend([item[0] for item in cursor.execute(f"SELECT student_username FROM StudentCourseTable WHERE course_code='{course_code}'").fetchall()])
+
+    threading.Thread(target=delete_image, args=(path_to_temp_image,)).start()
 
     return render_template("./website_pages/generate_report.html", path=path, students=students)
 # ========================
@@ -707,28 +781,32 @@ def generate_heatmap_individual():
 @app.route("/generate_heatmap_group", methods=["GET", "POST"])
 @login_required
 @instructor_only
-
 def generate_heatmap_group():
-
     if request.method == "GET":
         return redirect("/generate_report")
+    
+    if "highlights" in request.form:
+        print(request.form.get("highlights"))
+        return "200"
+    
+    student_usernames = ""
+    task_id = request.form.get("taskSelect")
 
     # Creating the list of students that were chosen by the instructor
     selected_students = [value for key, value in request.form.items() if "groupStudent" in key]
 
+    path_to_temp_image = generate_image_for_task(task_id)
+
     # Opening the unformatted image (without heatmap) and taking its width and height
-    image = Image.open("./static/media/image.png")
+    image = Image.open(path_to_temp_image)
     width = image.width
     height = image.height
 
-    # Initializing the heatmap as a 2-dimensional table
+    # Initializing the heatmap as a 2-diimensional table
     heatmap = np.zeros((height, width))
 
-    student_usernames = ""
-    task_id = None
-
     if request.form.get("reportFormat") == "gazeplot":
-        image = mpimg.imread("./static/media/image.png")
+        image = mpimg.imread(path_to_temp_image)
         image_height, image_width = image.shape[:2]
 
         users = [value for key, value in request.form.items() if "groupStudent" in key]
@@ -739,7 +817,7 @@ def generate_heatmap_group():
         for user, color in zip(users, colors):
 
             # Selecting the first instance of the student completing some task
-            data = cursor.execute(f"SELECT task_id, student_username, time FROM TaskDimensions WHERE student_username='{user}'").fetchone()
+            data = cursor.execute(f"SELECT task_id, student_username, time FROM TaskDimensions WHERE student_username='{user}' AND task_id={task_id}").fetchone()
 
             # Setting up student's username, task id that they completed, and time at which they completed
             # the task. This gives us uniqueness.
@@ -759,6 +837,20 @@ def generate_heatmap_group():
             coordinates = []
             for id in record_ids:
                 coordinates.extend(cursor.execute(f"SELECT Gaze_X, Gaze_Y, Gaze_Time FROM Fixation WHERE Record_id={id}").fetchall())
+
+            if not coordinates:
+                if "csvFile" not in request.files:
+                    flash("For one or more of the following students, you shall add the external csv file")
+                    return redirect("/generate_report")
+                columns = ['x', 'y', 'time', 'record_id']
+                df = pandas.read_csv(request.files["csvFile"], header=None, names=columns, skiprows=1)
+
+                for index, row in df.iterrows():
+                    if tuple(row.to_list())[-1] in record_ids:
+                        my_tuple = row.to_list()
+                        my_tuple.pop()
+                        my_tuple = tuple(my_tuple)
+                        coordinates.append(my_tuple)
 
             gaze_x = np.array([])
             gaze_y = np.array([])
@@ -813,11 +905,13 @@ def generate_heatmap_group():
         for course_code in course_codes:
             students.extend([item[0] for item in cursor.execute(f"SELECT student_username FROM StudentCourseTable WHERE course_code='{course_code}'").fetchall()])
 
+        threading.Thread(target=delete_image, args=(path_to_temp_image,)).start()
+
         return render_template("./website_pages/generate_report.html", path=path, students=students)
 
     for student in selected_students:
         # Selecting the first instance of the student completing some task
-        data = cursor.execute(f"SELECT task_id, student_username, time FROM TaskDimensions WHERE student_username='{student}'").fetchone()
+        data = cursor.execute(f"SELECT task_id, student_username, time FROM TaskDimensions WHERE student_username='{student}' AND task_id={task_id}").fetchone()
 
         # Setting up student's username, task id that they completed, and time at which they completed
         # the task. This gives us uniqueness.
@@ -841,6 +935,16 @@ def generate_heatmap_group():
         for id in record_ids:
             coordinates.extend(cursor.execute(f"SELECT Gaze_X,Gaze_Y FROM Fixation WHERE Record_id={id}").fetchall())
 
+        # IN CASE CSV SHALL BE ADDED
+        if not coordinates:
+            if "csvFile" not in request.files:
+                flash("For one or more of the following students, you shall add the external csv file")
+                return redirect("/generate_report")
+            df = pandas.read_csv(request.files["csvFile"])
+
+            for index, row in df.iterrows():
+                coordinates.append((index[0], index[1]))
+
         # Generating the heatmap based on the width and height of the image and coordinates
         # of the gaze points
         for x, y in coordinates:
@@ -848,12 +952,14 @@ def generate_heatmap_group():
                 heatmap[int(y - top), int(x - left)] += 1
 
     # Saving the heatmap
-    path = generate_and_save_heatmap(heatmap, width, height, student_usernames, task_id)
+    path = generate_and_save_heatmap(heatmap, width, height, student_usernames, task_id, path_to_temp_image)
 
     course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
     students = []
     for course_code in course_codes:
         students.extend([item[0] for item in cursor.execute(f"SELECT student_username FROM StudentCourseTable WHERE course_code='{course_code}'").fetchall()])
+
+    threading.Thread(target=delete_image, args=(path_to_temp_image,)).start()
 
     return render_template("./website_pages/generate_report.html", path=path, students=students)
 # ========================
@@ -927,6 +1033,24 @@ def save_csv_specific_student():
 
 # ROUTES FOR PROCESSING DATA WITH AJAX
 
+@app.route("/find_common_tasks")
+@login_required
+def find_common_tasks():
+    students = request.args.get('students').split("iii")[:-1]
+    task_ids = list(set([item[0] for item in cursor.execute(f"SELECT task_id FROM TaskDimensions").fetchall()]))
+
+    for username in students:
+        current_records = list(set([item[0] for item in cursor.execute(f"SELECT task_id FROM TaskDimensions WHERE student_username='{username}'").fetchall()]))
+        for task_id in task_ids:
+            if task_id not in current_records:
+                task_ids.remove(task_id)
+
+    names = []
+    for task_id in task_ids:
+        names.append(cursor.execute(f"SELECT task_id, name FROM Task WHERE task_id={task_id}").fetchone())
+
+    return jsonify(names)
+
 
 # /delete_csv
 # Send AJAX call to the server to delete the csv file that has been already
@@ -947,7 +1071,6 @@ def delete_csv():
 # ========================
 @app.route("/add_calibration_success", methods=["POST"])
 @login_required
-
 def add_calibration_success():
     session["calibrated"] = True
     return "200"
