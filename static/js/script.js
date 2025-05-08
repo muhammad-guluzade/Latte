@@ -27,11 +27,13 @@ if (document.getElementById("courseForm")) {
     });
 }
 
+var select_checker = 0;
 //Generate Report Page (generate_report.html)
 if (document.getElementById("reportForm")) {
     document.getElementById("reportForm").addEventListener("change", function () {
         let report_type_select = document.getElementById("reportType");
         let report_format_select = document.getElementById("reportFormat");
+        let task_select = document.getElementById("taskSelectSection");
 
         const individualReportSection = document.getElementById("individualReportSection");
         const groupReportSection = document.getElementById("groupReportSection");
@@ -39,15 +41,28 @@ if (document.getElementById("reportForm")) {
         if (!report_type_select.value || !report_format_select.value) {
             individualReportSection.style.display = "none";
             groupReportSection.style.display = "none";
+            task_select.style.display = "none";
+            select_checker = 0;
             return;
         }
 
         if (report_type_select.value === "individual") {
             individualReportSection.style.display = "block";
             groupReportSection.style.display = "none";
+            task_select.style.display = "block";
+            if(select_checker === 0){
+                find_common_tasks();
+                select_checker = 1;
+            }
+
         } else if (report_type_select.value === "group") {
             individualReportSection.style.display = "none";
             groupReportSection.style.display = "block";
+            task_select.style.display = "block";
+            if(select_checker === 0){
+                find_common_tasks();
+                select_checker = 1;
+            }
         }
     });
 
