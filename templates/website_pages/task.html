@@ -8,8 +8,40 @@
     <link rel="stylesheet" href="../../static/css/taskStyle.css">
     <style>
         {{ additional_styles }}
+
+        mark {
+            padding: 0;
+            border-radius: 2px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .popup {
+            position: absolute;
+            display: flex;
+            gap: 10px;
+            padding: 5px;
+            background: #fff;
+            border: 1px solid #aaa;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .color-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #333;
+        }
     </style>
     {% include "webgazer_import.html" %}
+    <style>
+        #webgazerVideoContainer {
+            z-index: -1;
+        }
+    </style>
 </head>
 
 <body>
@@ -20,7 +52,7 @@
         </header>
 
         <div class="task-content-container">
-            <pre class="task-content">{{ task_content|safe }}</pre>
+            <pre class="task-content" id="code-container">{{ task_content|safe }}</pre>
         </div>
 
         <div class="answer-form-container">
@@ -38,11 +70,10 @@
     </div>
 
     <script>
-
-        function check_if_empty(){
+        function check_if_empty() {
             let input = document.getElementById("answer").value;
             let form = document.getElementById("submitForm");
-            if(input.length === 0){
+            if (input.length === 0) {
                 alert("Please enter the answer");
                 return;
             }
@@ -51,12 +82,10 @@
 
         function getCurrentTime() {
             const now = new Date();
-
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
             const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
-
             return `${hours}:${minutes}:${seconds}.${milliseconds}`;
         }
 
@@ -66,8 +95,7 @@
 
         let counter = 0;
         let gaze_coordinates = [];
-        window.onload = function() {
-
+        window.onload = function () {
             var taskContentContainer = document.querySelector('.task-content-container');
             var rect = taskContentContainer.getBoundingClientRect();
 
@@ -81,45 +109,32 @@
 
             let dimensions = ["dim", left, top, task_id];
 
-            // Sending task's width and height to the server
             let xml_http1 = new XMLHttpRequest();
             xml_http1.open("POST", "/store", true);
             xml_http1.setRequestHeader("Content-Type", "application/json");
             xml_http1.send(JSON.stringify(dimensions));
 
             webgazer.setGazeListener((data, elapsedTime) => {
-                if(!data){
-                    return;
-                }
+                if (!data) return;
 
                 let rounded_x = Math.round(data.x * 100) / 100;
                 let rounded_y = Math.round(data.y * 100) / 100;
                 let rounded_timestamp = getCurrentTime();
                 counter++;
-                console.log(gaze_coordinates);
 
-                if(rounded_x > left && rounded_x < right && rounded_y < bottom && rounded_y > top){
-                    gaze_coordinates.push({
-                        task_id: task_id,
-                        x: rounded_x,
-                        y: rounded_y,
-                        t: rounded_timestamp
-                    });
+                if (rounded_x > left && rounded_x < right && rounded_y < bottom && rounded_y > top) {
+                    gaze_coordinates.push({ task_id, x: rounded_x, y: rounded_y, t: rounded_timestamp });
                 }
 
-                if(counter === 20){
+                if (counter === 20) {
                     counter = 0;
-
-                    if(gaze_coordinates.length > 0){
+                    if (gaze_coordinates.length > 0) {
                         let xml_http = new XMLHttpRequest();
                         xml_http.open("POST", "/store", true);
                         xml_http.setRequestHeader("Content-Type", "application/json");
                         xml_http.onreadystatechange = function () {
-                            gaze_coordinates = [];
-                                console.log(1);
                             if (xml_http.status >= 200 && xml_http.status < 300) {
                                 gaze_coordinates = [];
-                                console.log(1);
                             }
                         };
                         xml_http.send(JSON.stringify(gaze_coordinates));
@@ -127,8 +142,6 @@
                 }
             }).begin();
         };
-
-
     </script>
     <script src="../../static/js/script.js"></script>
 </body>

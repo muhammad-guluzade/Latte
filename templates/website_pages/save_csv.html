@@ -33,5 +33,35 @@
     </form>
 
     <script src="../../static/js/script.js"></script>
+
+    <script>
+
+let students_select_individual = document.getElementById("individualStudentList");
+        let students_select_group = document.getElementById("groupStudentList");
+        let students = {{ tasks_names_and_students|tojson }};
+
+function select_all() {
+            let value = null;
+            let inputs = document.getElementById("groupStudentList").querySelectorAll("input");
+
+            if(document.getElementById("all_selector").checked){
+                value = true;
+            }
+            else{
+                value = false;
+            }
+
+            for(let i = 0; i < inputs.length;i++){
+                inputs[i].checked = value;
+            }
+        }
+
+        if(students.length > 0){
+            students_select_group.innerHTML += `<div class="input-group">
+                                                <input onchange="select_all()" type="checkbox"  id="all_selector" name="all_selector">
+                                                <label for="all_selector">Select All</label>
+                                            </div>`;
+        }
+    </script>
 </body>
 </html>

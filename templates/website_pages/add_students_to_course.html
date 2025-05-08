@@ -60,6 +60,23 @@
         {% include "./show_flashed_messages.html" %}
     </div>
     <script>
+
+function select_all() {
+            let value = null;
+            let inputs = document.getElementById("multipleStudentList").querySelectorAll("input");
+
+            if(document.getElementById("all_selector").checked){
+                value = true;
+            }
+            else{
+                value = false;
+            }
+
+            for(let i = 0; i < inputs.length;i++){
+                inputs[i].checked = value;
+            }
+        }
+
         let select_form = document.getElementById("courseSelect");
         let students_form = document.getElementById("singleStudentList");
         let courses = {{ courses|tojson }};
@@ -78,6 +95,13 @@
                             <label for="groupStudent${i + 1}">${students[i]}</label>
                         </div>`;
         }
+
+        if(students.length > 0){
+            students_select_multiple.innerHTML += `<div class="input-group">
+                                                <input onchange="select_all()" type="checkbox"  id="all_selector" name="all_selector">
+                                                <label for="all_selector">Select All</label>
+                                            </div>`;
+                                        }
     </script>
     <script src="../../static/js/script.js"></script>
 </body>

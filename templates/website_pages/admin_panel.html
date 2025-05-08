@@ -21,8 +21,14 @@
                 <div class="input-group">
                     <label for="username">Username</label>
                     <input type="username" id="username" name="username" required>
-                    <button type="submit" class="btn">Add Instructor</button>
                 </div>
+                
+                <div class="input-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <button type="submit" class="btn">Add Instructor</button>
             </form>
         </div>
     {% include "./show_flashed_messages.html" %}

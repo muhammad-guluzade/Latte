@@ -10,6 +10,10 @@
         #heatmap_shower {
             display: none;
         }
+
+        #taskSelectSection {
+            display: none;
+        }
     </style>
 </head>
 
@@ -20,7 +24,7 @@
             {% include "./website_pages/navbar.html" %}
         </div>
         <h2>Generate Report</h2>
-        <form id="reportForm" method="post" action="/generate_report">
+        <form id="reportForm" method="post" action="/generate_report" enctype="multipart/form-data">
             <!-- Report Type Selection -->
             <div class="input-group">
                 <label for="reportType">Report Type</label>
@@ -47,7 +51,7 @@
                 <label for="individualStudentSearch">Search for Student</label>
                 <input type="text" id="individualStudentSearch" placeholder="Type to search..."
                     oninput="filterStudents('individualStudentList', 'individualStudentSearch')">
-                <select id="individualStudentList" name="individualStudent">
+                <select onchange="find_common_tasks()" id="individualStudentList" name="individualStudent">
 
                 </select>
             </div>
@@ -58,10 +62,23 @@
                 <label for="groupStudentSearch">Search for Students</label>
                 <input type="text" id="groupStudentSearch" placeholder="Type to search..."
                     oninput="filterStudents('groupStudentList', 'groupStudentSearch')">
-                <div id="groupStudentList">
-
+                <div onchange="find_common_tasks()" id="groupStudentList">
+                    
                 </div>
             </div>
+
+            <!-- Task Selection -->
+            <div class="input-group" id="taskSelectSection">
+                <label for="taskSelect">Select Task</label>
+                <select id="taskSelect" name="taskSelect" required>
+                    <option value="">Select Task</option>
+                </select>
+            </div>
+
+            <label for="csvFile">Upload CSV file:</label>
+            <input type="file" id="csvFile" name="csvFile" accept=".csv">
+
+            <a id="highlighter" href="#" onclick="redirect_to_highlight()" class="btn">Highlight Code</a>
 
             <button type="submit" class="btn">Generate Report</button>
             {% if path %}
@@ -77,6 +94,80 @@
         {% endif %}
     </div>
     <script>
+
+        var checker = 0;
+        var link_to_highlight = "/highlight";
+
+        function select_all() {
+            let value = null;
+            let inputs = document.getElementById("groupStudentList").querySelectorAll("input");
+
+            if(document.getElementById("all_selector").checked){
+                value = true;
+            }
+            else{
+                value = false;
+            }
+
+            for(let i = 0; i < inputs.length;i++){
+                inputs[i].checked = value;
+            }
+        }
+
+        function redirect_to_highlight() {
+            let task_selected = document.getElementById("taskSelect");
+            let i_or_g = document.getElementById("reportType");
+            
+            if(task_selected.value === ""){
+                alert("Please select a task first.");
+                return;
+            }
+
+            window.location.href = `/highlight?task_id=${task_selected.value}&type=${i_or_g.value}`;
+        }
+
+        function find_common_tasks(){
+            var students = "";
+            let xml_http1 = new XMLHttpRequest();
+            let response = null;
+            checker = 0;
+            document.getElementById("taskSelect").innerHTML = "<option value=''>Select Task</option>";
+
+            if(document.getElementById("reportType").value == "individual"){
+                students = `${document.getElementById("individualStudentList").value}iii`;
+            }
+            else{
+                let inputs = document.getElementById("groupStudentList").querySelectorAll("input");
+                for(let i = 0; i < inputs.length; i++){
+                    if(inputs[i].getAttribute("id") === "all_selector"){
+                        continue;
+                    }
+                    if(inputs[i].checked){
+                        students += `${inputs[i].value}iii`;
+                    }
+                }
+            }
+
+            xml_http1.open("GET", `/find_common_tasks?students=${students}`, true);
+            xml_http1.setRequestHeader("Content-Type", "application/json");
+
+            xml_http1.onreadystatechange = function () {
+                if (xml_http1.readyState === 4 && xml_http1.status >= 200 && xml_http1.status < 300) {
+                    response = JSON.parse(xml_http1.responseText);
+                    response = [...new Set(response)];
+                    console.log(response);
+
+                    if(checker === 0){
+                        for(let i = 0; i < response.length; i++){
+                            document.getElementById("taskSelect").innerHTML += `<option value=${response[i][0]}>${response[i][1]}</option>`;
+                        }
+                        checker = 1;
+                    }
+                }
+            };
+
+            xml_http1.send();
+        }
 
         function show_heatmap() {
             let heatmap_image = document.getElementById("heatmap_shower");
@@ -119,6 +210,13 @@
             students_select_group.innerHTML += `<div class="input-group">
                                                 <input type="checkbox" id="groupStudent${i + 1}" name="groupStudent${i + 1}" value="${students[i]}">
                                                 <label for="groupStudent${i + 1}">${students[i]}</label>
+                                            </div>`;
+        }
+
+        if(students.length > 0){
+            students_select_group.innerHTML += `<div class="input-group">
+                                                <input onchange="select_all()" type="checkbox"  id="all_selector" name="all_selector">
+                                                <label for="all_selector">Select All</label>
                                             </div>`;
         }
     </script>

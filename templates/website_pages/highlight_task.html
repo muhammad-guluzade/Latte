@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../../static/css/stylePages.css">
+    <style>
+        .popup {
+            position: absolute;
+            display: flex;
+            gap: 8px;
+            padding: 5px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+
+        .color-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 1px solid #888;
+        }
+
+        #code-container {
+            padding: 15px;
+            border: 1px solid #ccc;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        #highlight-counters{
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <form id="our_form" method="post" action="/generate_heatmap_{{ i_or_g }}">
+        <input type="hidden" name="highlights" id="highlights-data">
+        <div id="code-container">{{ task_content }}</div>
+        <button type="submit" class="btn">Submit</button>
+    </form>
+
+    <div id="highlight-counters" style="margin: 1em 0;">
+        <p id="yellow-count">🟡 Yellow: 0</p>
+        <p id="red-count">🔴 Red: 0</p>
+        <p id="green-count">🟢 Green: 0</p>
+        <p id="blue-count">🔵 Blue: 0</p>
+    </div>
+    
+
+    <div id="teller"></div>
+
+    <script>
+
+        window.onload = function () {
+            let report_type = "{{ i_or_g }}";
+            document.getElementById("our_form").setAttribute("action", `generate_heatmap_${report_type}`);
+        }
+
+        
+
+        function getAllHighlightContents() {
+            const allMarks = codeContainer.querySelectorAll("mark");
+            const highlights = [];
+
+            allMarks.forEach(mark => {
+                highlights.push({
+                color: getColorKey(mark.style.backgroundColor),
+                text: mark.textContent
+                });
+            });
+
+            return highlights;
+        }
+
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const highlights = getAllHighlightContents();
+            const highlightsInput = document.getElementById('highlights-data');
+
+            highlightsInput.value = JSON.stringify(highlights);
+        });
+
+        const codeContainer = document.getElementById('code-container');
+
+        const colors = {
+        yellow: "#ffff00",
+        red: "#ff4d4d",
+        green: "#4dff4d",
+        blue: "#4d94ff"
+        };
+
+        const counters = {
+        yellow: 0,
+        red: 0,
+        green: 0,
+        blue: 0
+        };
+
+        const highlights = {
+        yellow: null,
+        red: null,
+        green: null,
+        blue: null
+        };
+
+        function print_highlights() {
+            const teller = document.getElementById("teller");
+            teller.innerHTML = "";
+            for (let color in highlights) {
+                teller.innerHTML += `<p>${color}: ${highlights[color]}</p>`;
+            }
+        }
+
+        function updateCounters() {
+        document.getElementById('yellow-count').textContent = `🟡 Yellow: ${counters.yellow}`;
+        document.getElementById('red-count').textContent = `🔴 Red: ${counters.red}`;
+        document.getElementById('green-count').textContent = `🟢 Green: ${counters.green}`;
+        document.getElementById('blue-count').textContent = `🔵 Blue: ${counters.blue}`;
+        console.log(getAllHighlightContents());
+        }
+
+        function isSelectionOverlapping(range) {
+        const allMarks = codeContainer.querySelectorAll("mark");
+        for (let mark of allMarks) {
+            const markRange = document.createRange();
+            markRange.selectNodeContents(mark);
+            if (
+            range.compareBoundaryPoints(Range.END_TO_START, markRange) < 0 ||
+            range.compareBoundaryPoints(Range.START_TO_END, markRange) > 0
+            ) {
+            continue; // No overlap
+            } else {
+            return true; // Overlap found
+            }
+        }
+        return false;
+        }
+
+        function getColorKey(colorCode) {
+            const rgbToHex = (rgb) => {
+                const result = rgb.match(/\d+/g);
+                return "#" + result.map(x =>
+                    ("0" + parseInt(x).toString(16)).slice(-2)
+                ).join("");
+            };
+
+            let hexColor = colorCode;
+            if (colorCode.startsWith("rgb")) {
+                hexColor = rgbToHex(colorCode);
+            }
+
+            return Object.keys(colors).find(k => colors[k].toLowerCase() === hexColor.toLowerCase());
+        }
+
+
+        codeContainer.addEventListener('mouseup', function () {
+        const selection = window.getSelection();
+        const selectedText = selection.toString();
+
+        document.querySelectorAll('.popup').forEach(p => p.remove());
+
+        if (selectedText.trim().length > 0) {
+            const range = selection.getRangeAt(0);
+
+            // Check if overlapping any existing highlight
+            if (isSelectionOverlapping(range)) {
+            alert("Selected text is already highlighted. Please remove the existing highlight first.");
+            return;
+            }
+
+            const rect = range.getBoundingClientRect();
+
+            const popup = document.createElement('div');
+            popup.classList.add('popup');
+            popup.style.left = `${rect.left + window.scrollX}px`;
+            popup.style.top = `${rect.top + window.scrollY - 40}px`;
+
+            Object.entries(colors).forEach(([key, color]) => {
+            const circle = document.createElement('div');
+            circle.classList.add('color-circle');
+            circle.style.backgroundColor = color;
+
+            if (highlights[key]) {
+                circle.style.opacity = 0.5;
+                circle.style.pointerEvents = 'none';
+            }
+
+            circle.addEventListener('click', () => {
+                if (!highlights[key]) {
+                const span = document.createElement('mark');
+                span.style.backgroundColor = color;
+                span.textContent = selectedText;
+
+                // Click to remove highlight
+                span.addEventListener('click', () => {
+                    const unwrapped = document.createTextNode(span.textContent);
+                    span.replaceWith(unwrapped);
+                    counters[key]--;
+                    highlights[key] = null;
+                    updateCounters();
+
+                    const colorCircle = document.querySelector(`.color-circle[style*="background-color: ${color}"]`);
+                    if (colorCircle) {
+                    colorCircle.style.opacity = 1;
+                    colorCircle.style.pointerEvents = 'auto';
+                    }
+                });
+
+                // Replace selected content *without changing actual text*
+                range.deleteContents();
+                range.insertNode(span);
+
+                selection.removeAllRanges();
+                popup.remove();
+
+                counters[key]++;
+                highlights[key] = selectedText;
+                updateCounters();
+
+                const colorCircle = document.querySelector(`.color-circle[style*="background-color: ${color}"]`);
+                if (colorCircle) {
+                    colorCircle.style.opacity = 0.5;
+                    colorCircle.style.pointerEvents = 'none';
+                }
+                }
+            });
+
+            popup.appendChild(circle);
+            });
+
+            document.body.appendChild(popup);
+        }
+        });
+
+    </script>
+</body>
+</html>
