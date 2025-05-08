@@ -8,7 +8,14 @@ import datetime
 from jinja2 import Environment
 from pygments import highlight
 from pygments.formatters import HtmlFormatter, ImageFormatter
-from pygments.lexers import CLexer, JavaLexer, PythonLexer
+
+from pygments.lexers.python import PythonLexer
+from pygments.lexers.c_cpp import CppLexer
+from pygments.lexers.javascript import JavascriptLexer
+from pygments.lexers.jvm import JavaLexer
+from pygments.lexers.haskell import HaskellLexer
+from pygments.lexers.dotnet import CSharpLexer
+
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
@@ -49,10 +56,6 @@ app.secret_key = "123"
 PLACEHOLDER = "?"
 
 # =================
-
-# !
-# Lexer is global for now
-LEXER = PythonLexer()
 
 # WRAPPER FUNCTIONS
 
@@ -554,7 +557,24 @@ def task(task_id):
     # Formatting the task content as a highlighted code to be displayed as text on
     # the html page
     html_formatter = HtmlFormatter(style='default')
-    task_content = highlight(task[2], LEXER, html_formatter)
+
+    pl = request.form.get("codingLanguage")
+    if pl == "python":
+        lexer = PythonLexer()
+    elif pl == "cpp":
+        lexer = CppLexer()
+    elif pl == "java":
+        lexer = JavaLexer()
+    elif pl == "js":
+        lexer = JavascriptLexer()
+    elif pl == "hs":
+        lexer = HaskellLexer()
+    elif pl == "csharp":
+        lexer = CSharpLexer()
+    else:
+        lexer = PythonLexer()
+
+    task_content = highlight(task[2], lexer, html_formatter)
 
     return render_template("./website_pages/task.html", task_id=task_id, task=task, task_content=task_content, additional_styles=html_formatter.get_style_defs())
 # ========================
