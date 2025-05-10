@@ -54,8 +54,32 @@ app.secret_key = "123"
 # by just changing the PLACEHOLDER to '?' for sqlite3 and '%s' for mysql
 # =================
 PLACEHOLDER = "?"
+# =================
+
+# HELPER FUNCTIONS
+# =================
+def choose_lexer(pl):
+    if pl == "python":
+        lexer = PythonLexer()
+    elif pl == "cpp":
+        lexer = CppLexer()
+    elif pl == "java":
+        lexer = JavaLexer()
+    elif pl == "js":
+        lexer = JavascriptLexer()
+    elif pl == "hs":
+        lexer = HaskellLexer()
+    elif pl == "csharp":
+        lexer = CSharpLexer()
+    else:
+        lexer = PythonLexer()
+
+    print(pl)
+    
+    return lexer
 
 # =================
+
 
 # WRAPPER FUNCTIONS
 
@@ -544,7 +568,6 @@ def task_set(task_set_id):
 # ========================
 @app.route("/task/<task_id>")
 @login_required
-
 def task(task_id):
     session['calibrated'] = True
     # If the student did not complete the calibration
@@ -559,22 +582,8 @@ def task(task_id):
     # Formatting the task content as a highlighted code to be displayed as text on
     # the html page
     html_formatter = HtmlFormatter(style='default')
-
-    pl = task[0]
-    if pl == "python":
-        lexer = PythonLexer()
-    elif pl == "cpp":
-        lexer = CppLexer()
-    elif pl == "java":
-        lexer = JavaLexer()
-    elif pl == "js":
-        lexer = JavascriptLexer()
-    elif pl == "hs":
-        lexer = HaskellLexer()
-    elif pl == "csharp":
-        lexer = CSharpLexer()
-    else:
-        lexer = PythonLexer()
+    
+    lexer = choose_lexer(pl)
 
     task_content = highlight(task[2], lexer, html_formatter)
 
@@ -584,6 +593,7 @@ def task(task_id):
 
 def generate_image_for_task(task_id):
     task = cursor.execute(f"SELECT name, task_content FROM Task WHERE task_id={task_id}").fetchone()
+    pl = cursor.execute(f"SELECT pl FROM Task WHERE task_id={task_id}").fetchone()[0]
 
     # Saving the task as an image of highlighted code to later be formatted as a heatmap
     image_formatter = ImageFormatter(
@@ -593,7 +603,8 @@ def generate_image_for_task(task_id):
         font_size=12,
         line_height=1.2
     )
-    image_content = highlight(task[1], LEXER, image_formatter)
+    lexer = choose_lexer(pl)
+    image_content = highlight(task[1], lexer, image_formatter)
 
     path = f"./static/media/{task[0]}.png"
 
