@@ -447,8 +447,8 @@ def add_task(set_of_task_id):
 
     # POST request adds a new task to the set of task
     cursor.execute(
-        f"INSERT INTO Task (name,Description, task_content, Answer, set_of_task_id) VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})",
-        (request.form.get("taskName"), request.form.get("taskDescription"), request.form.get("taskContent"),request.form.get("taskAnswer"), set_of_task_id)
+        f"INSERT INTO Task (Pl, name,Description, task_content, Answer, set_of_task_id) VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})",
+        (request.form.get("codingLanguage"), request.form.get("taskName"), request.form.get("taskDescription"), request.form.get("taskContent"),request.form.get("taskAnswer"), set_of_task_id)
     )
     conn.commit()
     return redirect(f"/task_set_details/{set_of_task_id}")
@@ -554,11 +554,13 @@ def task(task_id):
     # Selecting the task from the database
     task = cursor.execute(f"SELECT name, description, task_content FROM Task WHERE task_id={task_id}").fetchone()
 
+    pl = cursor.execute(f"SELECT Pl FROM Task WHERE task_id={task_id}").fetchone()[0]
+
     # Formatting the task content as a highlighted code to be displayed as text on
     # the html page
     html_formatter = HtmlFormatter(style='default')
 
-    pl = request.form.get("codingLanguage")
+    pl = task[0]
     if pl == "python":
         lexer = PythonLexer()
     elif pl == "cpp":
