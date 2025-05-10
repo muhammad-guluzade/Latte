@@ -43,6 +43,7 @@ CREATE TABLE SetOfTask (
 -- set_of_task_id
 CREATE TABLE Task (
     Task_id INTEGER PRIMARY KEY AUTOINCREMENT, -- Added id to tasks
+    Pl VARCHAR(255) NOT NULL,
     Name VARCHAR(255) NOT NULL,
     Description TEXT,
     Task_content TEXT,
