@@ -109,3 +109,9 @@ CREATE TABLE StudentCourseTable (
     FOREIGN KEY (Course_code) REFERENCES Course(Course_code) ON DELETE CASCADE,
     PRIMARY KEY (Student_username, Course_code)
 );
+
+CREATE TABLE TaskLines (
+    Line VARCHAR(255) NOT NULL,
+    Line_cor INT NOT NULL,
+    task_id INT NOT NULL
+)
