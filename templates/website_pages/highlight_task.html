@@ -58,7 +58,9 @@
 
         window.onload = function () {
             let report_type = "{{ i_or_g }}";
-            document.getElementById("our_form").setAttribute("action", `generate_heatmap_${report_type}`);
+            let task_id = "{{ task_id }}";
+            let format = "{{ format }}";
+            document.getElementById("our_form").setAttribute("action", `generate_report?task_id=${task_id}&type=${report_type}&format=${format}`);
         }
 
         

@@ -14,6 +14,25 @@
         #taskSelectSection {
             display: none;
         }
+
+        
+        #image {
+            display: none;
+            
+            border: solid 1px red;
+            background-color: blue;
+            cursor: pointer;
+            position: relative;
+
+            background-image: url("../../static/media/heatmap.png")
+        }
+
+
+        #rect {
+            border: solid 2px red;
+            pointer-events: none;
+            display: none;
+        }
     </style>
 </head>
 
@@ -26,6 +45,12 @@
         <h2>Generate Report</h2>
         <form id="reportForm" method="post" action="/generate_report" enctype="multipart/form-data">
             <!-- Report Type Selection -->
+
+            <input type="hidden" name="x0" id="x0">
+            <input type="hidden" name="x1" id="x1">
+            <input type="hidden" name="y0" id="y0">
+            <input type="hidden" name="y1" id="y1">
+
             <div class="input-group">
                 <label for="reportType">Report Type</label>
                 <select id="reportType" name="reportType" onchange="change_generate_url()" required>
@@ -93,7 +118,97 @@
             <img width="500" src="{{ path }}">
         {% endif %}
     </div>
+
+    <div id="image" class="image"></div>
+    <div id="rect"></div>
+    <div id="bounds"></div>
+
     <script>
+        
+    
+    (function () {
+
+
+        var div = document.getElementById('image');
+        div.addEventListener('mousedown', mousedown);
+        div.addEventListener('mouseup', mouseup);
+        div.addEventListener('mousemove', mousemove);
+
+        var grab = false;
+        var rect = {
+            x0: 0,
+            y0: 0,
+            x1: 0,
+            y1: 0
+        };
+
+        var actual_cors = {
+            x0: 0,
+            y0: 0,
+            x1: 0,
+            y1: 0
+        };
+
+        function mousedown(e) {
+            grab = true;
+            const rectBounds = div.getBoundingClientRect();
+            rect.x0 = e.clientX;
+            rect.y0 = e.clientY;
+
+            actual_cors.y0 = Math.round((e.clientY - rectBounds.top) * 100) / 100;
+            actual_cors.x0 = Math.round((e.clientX - rectBounds.left) * 100) / 100;
+        }
+
+        function mousemove(e) {
+            if (grab) {
+                const rectBounds = div.getBoundingClientRect();
+                rect.x1 = e.clientX;
+                rect.y1 = e.clientY;
+
+                actual_cors.x1 = Math.round((e.clientX - rectBounds.left) * 100) / 100;
+                actual_cors.y1 = Math.round((e.clientY - rectBounds.top) * 100) / 100;
+                showRect();
+            }
+        }
+
+        function mouseup(e) {
+            grab = false;
+
+
+        }
+
+        function showRect() {
+            var rectDiv = document.getElementById('rect');
+            rectDiv.style.display = 'block';
+            rectDiv.style.position = 'absolute';
+            rectDiv.style.left = rect.x0 + 'px';
+            rectDiv.style.top = rect.y0 + 'px';
+            rectDiv.style.width = (rect.x1 - rect.x0) + 'px';
+            rectDiv.style.height = (rect.y1 - rect.y0) + 'px';
+
+            document.getElementById("x0").value = actual_cors.x0;
+            document.getElementById("x1").value = actual_cors.x1;
+            document.getElementById("y0").value = actual_cors.y0;
+            document.getElementById("y1").value = actual_cors.y1;
+
+            var boundsDiv = document.getElementById('bounds');
+            boundsDiv.innerText = 'crop rect: ' + actual_cors.x0 + ',' + actual_cors.y0 + ' to ' + actual_cors.x1 + ',' + actual_cors.y0;
+        }
+
+    })();
+
+
+
+
+    </script>
+
+    <script>
+
+        function decodeHTMLEntities(str) {
+            const textarea = document.createElement("textarea");
+            textarea.innerHTML = str;
+            return textarea.value;
+        }
 
         var checker = 0;
         var link_to_highlight = "/highlight";
@@ -117,13 +232,33 @@
         function redirect_to_highlight() {
             let task_selected = document.getElementById("taskSelect");
             let i_or_g = document.getElementById("reportType");
+            let g_or_h = document.getElementById("reportFormat");
+
+            let xml_http1 = new XMLHttpRequest();
             
             if(task_selected.value === ""){
                 alert("Please select a task first.");
                 return;
             }
 
-            window.location.href = `/highlight?task_id=${task_selected.value}&type=${i_or_g.value}`;
+            xml_http1.open("GET", `/generate_image_for_highlight?task_id=${task_selected.value}`, true);
+            xml_http1.setRequestHeader("Content-Type", "application/json");
+
+            xml_http1.onreadystatechange = function () {
+                if (xml_http1.readyState === 4 && xml_http1.status >= 200 && xml_http1.status < 300) {
+                    document.getElementById("image").style.backgroundImage = "url('../../static/media/code_image.png')";
+                    document.getElementById("image").style.display = "block";
+
+                    str = xml_http1.responseText;
+
+                    let parts = str.split("_");
+
+                    document.getElementById("image").style.width = `${parts[0]}px`;
+                    document.getElementById("image").style.height = `${parts[1]}px`;
+                }
+            };
+
+            xml_http1.send();
         }
 
         function find_common_tasks(){

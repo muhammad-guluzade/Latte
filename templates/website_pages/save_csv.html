@@ -20,10 +20,10 @@
             <input type="text" id="groupStudentSearch" placeholder="Type to search..."
                 oninput="filterStudents('groupStudentList', 'groupStudentSearch')">
             <div id="groupStudentList">
-                {% for item in tasks_names_and_students %}
+                {% for item in tasks %}
                     <div class="input-group">
-                        <input type="checkbox" id="{{ item[0] }}_{{ item[1] }}" name="{{ item[0] }}_{{ item[1] }}" value="{{ item[0] }}_{{ item[1] }}">
-                        <label for="{{ item[0] }}_{{ item[1] }}">{{ item[1] }}, {{ item[2] }}</label>
+                        <input type="checkbox" id="{{ item[0] }}" name="task_{{ item[0] }}" value="{{ item[0] }}" onclick="onlyOne(this)">
+                        <label for="{{ item[0] }}">{{ item[1] }}</label>
                     </div>
                 {% endfor %}
             </div>
@@ -38,7 +38,14 @@
 
 let students_select_individual = document.getElementById("individualStudentList");
         let students_select_group = document.getElementById("groupStudentList");
-        let students = {{ tasks_names_and_students|tojson }};
+        let students = {{ tasks|tojson }};
+
+        function onlyOne(checkbox) {
+        const checkboxes = document.querySelectorAll('#groupStudentList input[type="checkbox"]');
+        checkboxes.forEach((cb) => {
+            if (cb !== checkbox) cb.checked = false;
+        });
+    }
 
 function select_all() {
             let value = null;
