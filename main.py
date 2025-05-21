@@ -59,6 +59,12 @@ PLACEHOLDER = "?"
 
 # HELPER FUNCTIONS
 # =================
+def make_image_720p(path):
+    image = Image.open(path)
+    image_resized = image.resize((1280, 720), Image.Resampling.LANCZOS)
+    image_resized.save(path)
+
+
 def choose_lexer(pl):
     if pl == "python":
         lexer = PythonLexer()
@@ -640,6 +646,8 @@ def generate_image_for_task(task_id, code_image=False):
     with open(path, "wb") as image_file:
         image_file.write(image_content)
 
+    make_image_720p(path)
+
     return path
 
 
@@ -787,6 +795,7 @@ def generate_heatmap_individual():
 
             user_data[user] = {"x": gaze_x, "y": gaze_y, "timestamps": timestamps, "sizes": sizes, "color": color}
 
+        
         fig, ax = plt.subplots(figsize=(image_width / 100, image_height / 100), dpi=100)
         ax.set_xlim(0, image_width)
         ax.set_ylim(image_height, 0)
@@ -804,7 +813,8 @@ def generate_heatmap_individual():
         ax.set_yticks([])
 
         path = "../../static/media/gaze_plot.png"
-        plt.savefig("./static/media/gaze_plot.png", dpi=300, bbox_inches='tight', pad_inches=0)
+        
+        plt.savefig("./static/media/gaze_plot.png", dpi=100, bbox_inches='tight', pad_inches=0)
         
         if not (x0 == ""):
             image = Image.open("./static/media/gaze_plot.png")
@@ -812,6 +822,8 @@ def generate_heatmap_individual():
 
             cropped_image = image.crop(crop_box)
             cropped_image.save("./static/media/gaze_plot.png")
+
+        make_image_720p("./static/media/gaze_plot.png")
 
         course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
         students = []
@@ -860,6 +872,8 @@ def generate_heatmap_individual():
 
         cropped_image = image.crop(crop_box)
         cropped_image.save("./static/media/heatmap.png")
+
+    make_image_720p("./static/media/heatmap.png")
 
     course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
     students = []
@@ -970,6 +984,7 @@ def generate_heatmap_group():
 
             user_data[user] = {"x": gaze_x, "y": gaze_y, "timestamps": timestamps, "sizes": sizes, "color": color}
 
+        
         fig, ax = plt.subplots(figsize=(image_width / 100 + 3, image_height / 100), dpi=100)  # Add extra width for legend
         ax.set_xlim(0, image_width)
         ax.set_ylim(image_height, 0)
@@ -995,7 +1010,8 @@ def generate_heatmap_group():
         path = "../../static/media/gaze_plot.png"
 
         # Save the figure
-        plt.savefig("./static/media/gaze_plot.png", dpi=300, bbox_inches='tight', pad_inches=0)
+        
+        plt.savefig("./static/media/gaze_plot.png", dpi=100, bbox_inches='tight', pad_inches=0)
 
         if not (x0 == ""):
             image = Image.open("./static/media/gaze_plot.png")
@@ -1003,6 +1019,8 @@ def generate_heatmap_group():
 
             cropped_image = image.crop(crop_box)
             cropped_image.save("./static/media/gaze_plot.png")
+
+        make_image_720p("./static/media/gaze_plot.png")
 
         course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
         students = []
@@ -1063,6 +1081,8 @@ def generate_heatmap_group():
 
         cropped_image = image.crop(crop_box)
         cropped_image.save("./static/media/heatmap.png")
+
+    make_image_720p("./static/media/heatmap.png")
 
     course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
     students = []
