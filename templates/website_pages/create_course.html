@@ -28,7 +28,7 @@
             </div>
             <div class="input-group">
                 <label for="courseDescription">Course Description</label>
-                <textarea id="courseDescription" name="courseDescription"></textarea>
+                <textarea id="courseDescription" name="courseDescription" required></textarea>
             </div>
 
             <!-- Checkbox for adding task set -->
@@ -70,7 +70,9 @@
                     <input type="text" id="singleStudentSearch" placeholder="Type to search..."
                         oninput="filterStudents('singleStudentList', 'singleStudentSearch')">
                     <select id="singleStudentList" name="singleStudent">
-
+                        {% for student in students %}
+                            <option value="{{ student }}">{{ student }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -80,29 +82,20 @@
                     <input type="text" id="multipleStudentSearch" placeholder="Type to search..."
                         oninput="filterStudents('multipleStudentList', 'multipleStudentSearch')">
                     <div id="multipleStudentList">
-
+                        {% for student in students %}
+                        <div class="input-group">
+                            <input type="checkbox" id="groupStudent{{ loop.index }}" name="groupStudent{{ loop.index }}" value="{{ student }}">
+                            <label for="groupStudent{{ loop.index }}">{{ student }}</label>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
 
             <button type="submit" class="btn" id="btnCreateClass">Create Course</button>
-            <p id="confirmationMessage" class="confirmation-message">Course created successfully!</p>
         </form>
         {% include "./show_flashed_messages.html" %}
     </div>
-    <script>
-        let students_select_single = document.getElementById("singleStudentList");
-        let students_select_multiple = document.getElementById("multipleStudentList");
-        let students = {{ students|tojson }};
-
-        for(let i = 0; i < students.length; i++){
-            students_select_single.innerHTML += `<option value="${students[i]}">${students[i]}</option>`;
-            students_select_multiple.innerHTML += `<div class="input-group">
-                            <input type="checkbox" id="groupStudent${i + 1}" name="groupStudent${i + 1}" value="${students[i]}">
-                            <label for="groupStudent${i + 1}">${students[i]}</label>
-                        </div>`;
-        }
-    </script>
     <script src="../../static/js/script.js"></script>
 </body>
 

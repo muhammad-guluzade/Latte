@@ -48,20 +48,13 @@ let students_select_individual = document.getElementById("individualStudentList"
     }
 
 function select_all() {
-            let value = null;
-            let inputs = document.getElementById("groupStudentList").querySelectorAll("input");
-
-            if(document.getElementById("all_selector").checked){
-                value = true;
-            }
-            else{
-                value = false;
-            }
-
-            for(let i = 0; i < inputs.length;i++){
-                inputs[i].checked = value;
-            }
-        }
+    let value = document.getElementById("all_selector").checked;
+    let inputs = document.getElementById("groupStudentList").querySelectorAll("input[type='checkbox']:not(#all_selector)");
+    
+    for(let i = 0; i < inputs.length; i++){
+        inputs[i].checked = value;
+    }
+}
 
         if(students.length > 0){
             students_select_group.innerHTML += `<div class="input-group">

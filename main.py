@@ -83,6 +83,24 @@ def choose_lexer(pl):
     
     return lexer
 
+
+# Helps to execute queries
+def execute_sql(query, params=(),all=0, fetch=False):
+    #This method takes in 4 parameters, the query, params(placeholders), all(to fetchone or fetchall) and
+    # return a list or not
+    try:
+        cursor.execute(query, params)
+        if fetch:
+            if not all:
+                return cursor.fetchall()
+            else:
+                return cursor.fetchone()
+        conn.commit()
+        return True
+    except sqlite3.Error as e:
+        conn.rollback()
+        app.logger.error(f"Database error: {e}")
+        return False
 # =================
 
 
@@ -136,49 +154,231 @@ def index():
         return render_template("website_pages/dashboards.html", courses=course_codes_for_student)
 # ========================
 
-
-# /add_students_to_course
-# The url that allows instructor to add single or multiple students
-# to the specific course.
+# /signup
+# Signs the new user as a student or instructor.
+# This route also serves as a method for admin to add the new instructor to the database
 # ========================
-@app.route("/add_students_to_course", methods=["GET", "POST"])
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    # If the request was issued by admin to add new instructor
+    if request.args.get("admin") == "true":
+        # If the user other than admin tries to access this route
+        if session['user_type'] != "a":
+            flash("You do not have the authority to perform this action")
+            return redirect("/")
+        
+        username = execute_sql(f"SELECT Instructor_username FROM Instructor WHERE Instructor_username='{request.form.get('username')}'", (),all=1, fetch= True)
+        if username:
+            flash("This username already exists")
+            return redirect("/")
+        
+        try:
+            username=request.form.get('username')
+            with smtplib.SMTP("smtp.gmail.com", 587) as connection:
+                connection.starttls()
+                connection.login(user=USER, password=PASSWORD)
+                
+                mail = f"Subject:Latte - Username Added Alert\n\nYour username has been added to the system. You can now register as an instructor. \n Your username: {username}"
+                connection.sendmail(from_addr=USER, to_addrs=request.form.get("email"), msg=mail)
+        except Exception as e:
+            print(f"{e}")
+            flash("The email could not be sent. The user not added")
+            return redirect("/")
+        try:
+            if not execute_sql(
+            f"INSERT INTO Instructor (Instructor_username) VALUES (?)",
+            (username,)
+            ):
+                raise Exception("Unable to add instructor")
+            flash("Instructor Has been added successfully!")
+            return redirect("/")
+        except Exception as e:
+            flash(f"{e}")
+            return redirect("/")
+
+
+    # If the user is already logged in, redirect them to the main page
+    if "latte_user" in session:
+        return redirect("/")
+
+    # GET request shows the signup form
+    if request.method == "GET":
+        return render_template("website_pages/signup.html")
+
+    # POST request adds the new user
+    if request.method=="POST":
+        try:
+            username = request.form.get("username")
+            password = request.form.get("password")
+            name = request.form.get("name")
+            surname = request.form.get("surname")
+            DateOfBirth = request.form.get("dateofbirth")
+            # Try to creates a user
+            if not execute_sql("INSERT INTO User (Username, Password, Name, Surname, DateOfBirth) VALUES(?,?,?,?,?)", (username, password, name, surname, DateOfBirth), fetch=False):
+                raise Exception ("User creation failed!")            
+            #user has been created, We now check if the user is an instructor.
+            
+            # Checks whether the new user is instructor or student
+            instructor_usernames = [item[0] for item in execute_sql("SELECT instructor_username FROM Instructor", fetch=True)]
+            if username in instructor_usernames:
+                user_type = "instructor"
+                flash(f"User registered successfully as {user_type}. Please login.")               
+            else:
+                if not execute_sql("INSERT INTO Student (Student_username) VALUES (?)", (username, )):
+                    raise Exception ("Student account creation failed!")
+                user_type = "student"
+                flash(f"User registered successfully as {user_type}. Please login.") 
+            
+        except Exception as e:
+            app.logger.error(f"{e}")
+            flash(f"{e} ")
+            return render_template("website_pages/signup.html")
+                
+    return render_template("website_pages/login.html")
+
+# ========================
+
+# /login
+# This is the only route that can set the user as logged in, because after signing up, the
+# user has to log in with the entered credentials.
+# Logs the user in as an admin, instructor, or student.
+# ========================
+@app.route("/login", methods=["GET", "POST"])
+
+def login():
+    # If the user is already logged in, redirect them to the main page
+    if "latte_user" in session:
+        return redirect("/")
+
+    # GET request displays the login form
+    if request.method == "GET":
+        return render_template("website_pages/login.html")
+
+    # If request is post
+    # POST request validates entered credentials
+    if request.method == "POST":
+        try:
+            username = request.form.get("username")
+            if not username:
+                flash("Username is required")
+                return render_template("website_pages/login.html")
+            password =execute_sql(f"SELECT password FROM User WHERE username='{username}'", all=1, fetch=True) 
+
+            # If the password was not found for the given username, it means the user does not exist
+            if not password:
+                flash("The user does not exist")
+                return render_template("website_pages/login.html")
+
+            
+            # If the password is not correct
+            if password[0] != request.form.get("password"):
+                flash("Passwords do not match")
+                return render_template("website_pages/login.html")
+
+            # Selecting the admin and instructor usernames to check the type of the user
+            admins_usernames = [item[0] for item in execute_sql("SELECT admin_username FROM Admin", (), fetch=True)]
+            instructors_usernames = [item[0] for item in execute_sql("SELECT instructor_username FROM Instructor",(), fetch=True)]
+
+            # Setting the type of the user
+            if username in admins_usernames:
+                session["user_type"] = "a"
+            elif username in instructors_usernames:
+                session["user_type"] = "i"
+            else:
+                session["user_type"] = "s"
+
+            # Setting the username in session to be used elsewhere in the code
+            session["latte_user"] = username
+
+        except Exception as e:
+            app.logger.error(f"login error: {e}")
+            flash("An unexpected error occured during Login!")
+            return redirect("/")
+
+    return redirect("/")
+# ========================
+
+# /create_course
+# Allows the instructor to create the course. Along with creating a new course,
+# the instructor can create one task set and add one or multiple students to the course.
+# ========================
+@app.route("/create_course", methods=["GET", "POST"])
 @login_required
 @instructor_only
-def add_students_to_course():
-    # GET request just shows the students registered in the system and courses of the instructor
+def create_course():
     if request.method == "GET":
-        courses = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE Instructor_username='{session['latte_user']}'").fetchall()]
-        students = [item[0] for item in cursor.execute("SELECT student_username FROM Student").fetchall()]
-        return render_template("website_pages/add_students_to_course.html", courses=courses, students=students)
+        try:
+            students = [item[0] for item in execute_sql(
+                "SELECT student_username FROM Student", 
+                fetch=True
+            ) or []]
+            return render_template("website_pages/create_course.html", students=students)
+        except Exception as e:
+            app.logger.error(f"Failed to fetch students: {str(e)}")
+            flash(f"{e}")
+            return redirect("/")
 
-    # POST request connects one or more students to the specific course
-    if request.form.get("addStudentType") == "single":
-        # If the student is already enrolled in the course, notifies the instructor
-        if cursor.execute(f"SELECT student_username, course_code FROM StudentCourseTable WHERE student_username='{request.form.get('singleStudent')}' AND course_code='{request.form.get('courseSelect')}'").fetchone():
-            flash("Student already added to this course")
-            return redirect("/add_students_to_course")
-        cursor.execute(
-            "INSERT INTO StudentCourseTable (student_username, course_code) VALUES (?, ?)",
-            (request.form.get("singleStudent"), request.form.get("courseSelect")),
-        )
-        flash("Successfully added the student")
-    else:
-        # Creating a list of students that were chosen by the instructor
-        selected_students = [value for key, value in request.form.items() if "groupStudent" in key]
-        for student in selected_students:
-            # If one of the students is already enrolled in the course, notifies the instructor
-            if cursor.execute(
-                f"SELECT student_username, course_code FROM StudentCourseTable WHERE student_username='{student}' AND course_code='{request.form.get('courseSelect')}'").fetchone():
-                flash("One of the students already added to this course")
-                return redirect("/add_students_to_course")
-            cursor.execute(
-                "INSERT INTO StudentCourseTable (student_username, course_code) VALUES (?, ?)",
-                (student, request.form.get("courseSelect")),
-            )
-        flash("Successfully added the students")
-    conn.commit()
-    return redirect("/add_students_to_course")
+    if request.method == "POST":
+        try:
+            course_code = request.form.get("courseCode")
+            course_name = request.form.get("courseName")
+            course_desc = request.form.get("courseDescription")            
+            
+            # Validate required fields
+            if not all([course_code, course_name, course_desc]):
+                flash("All course fields are required")
+                return redirect("/create_course")
+                
+            # Create course
+            if not execute_sql(f"INSERT INTO Course (Course_code, Name, Description, Instructor_username) VALUES (?, ?, ?, ?)",
+                        (course_code, course_name, course_desc, session['latte_user'])): 
+                raise Exception("Unable to create a new course!")
+
+            # Handle task set creation if requested
+            if request.form.get("addTaskSet"):
+                task_setname = request.form.get("taskSetName")
+                if not task_setname:
+                    execute_sql(f"DELETE FROM Course WHERE course_code='{course_code}'")
+                    flash("Enter a task name")
+                    return redirect("/create_course")
+                if not execute_sql(f"INSERT INTO SetOfTask (Name, Course_code) VALUES (?,?)", (task_setname,course_code)):
+                    raise Exception("Error occurred when adding Task setname")
+
+            # Handle student additions if requested
+            if request.form.get("addStudents"):
+                if request.form.get("studentType") == "single":
+                    single_student = request.form.get("singleStudent")
+                    if not single_student:
+                        execute_sql(f"DELETE FROM Course WHERE course_code='{course_code}'")
+                        flash("Please select a student to add")
+                        return redirect("/create_course")
+                    if not execute_sql("INSERT INTO StudentCourseTable (student_username, course_code) VALUES (?, ?)", 
+                                     (single_student, course_code)):
+                        raise Exception("Unable to add student to Course")                    
+                else:
+                    selected_students = [value for key, value in request.form.items() if "groupStudent" in key]
+                    if not selected_students:
+                        execute_sql(f"DELETE FROM Course WHERE course_code={course_code}")
+                        flash("Please select students to add")
+                        return redirect("/create_course")
+                    for student in selected_students:
+                        if not execute_sql(
+                            "INSERT INTO StudentCourseTable (student_username, course_code) VALUES (?, ?)",
+                            (student, course_code)
+                        ):
+                            raise Exception("Unable to add student to course")
+
+            # Only show success if everything completed without errors or redirects
+            flash("Course created successfully")
+            return redirect("/create_course")
+
+        except Exception as e:
+            app.logger.error(f"{e}")
+            flash(f"{e}")
+            return redirect("/create_course")
+
 # ========================
+
 
 # /course_details/<course_code>
 # Shows the details of the course related to specific instructor as well as
@@ -207,210 +407,48 @@ def course_details(course_code):
     return redirect("/view_courses")
 # ========================
 
-# /create_course
-# Allows the instructor to create the course. Along with creating a new course,
-# the instructor can create one task set and add one or multiple students to the course.
+# /add_students_to_course
+# The url that allows instructor to add single or multiple students
+# to the specific course.
 # ========================
-@app.route("/create_course", methods=["GET", "POST"])
+@app.route("/add_students_to_course", methods=["GET", "POST"])
 @login_required
 @instructor_only
-
-def create_course():
-    # GET request displays the page with the form for creating a new course and available students to
-    # enroll in the new course
+def add_students_to_course():
+    # GET request just shows the students registered in the system and courses of the instructor
     if request.method == "GET":
-        students = [item[0] for item in cursor.execute(f"SELECT student_username FROM Student").fetchall()]
-        return render_template("website_pages/create_course.html", students=students)
+        courses = [item[0] for item in execute_sql(f"SELECT course_code FROM Course WHERE Instructor_username='{session['latte_user']}'", fetch=True)]
+        students = [item[0] for item in execute_sql("SELECT student_username FROM Student", fetch=True)]
+        return render_template("website_pages/add_students_to_course.html", courses=courses, students=students)
 
-    # POST request creates a new course
-    cursor.execute(
-        f"INSERT INTO Course (Course_code, Name, Description, Instructor_username) VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})",
-        (request.form.get("courseCode"), request.form.get("courseName"), request.form.get("courseDescription"), session['latte_user'])
-    )
-
-    # If the instructor chose to create a task set as well
-    if request.form.get("addTaskSet"):
-        if request.form.get("taskSetName") == "":
-            cursor.execute(f"DELETE FROM Course WHERE course_code='{request.form.get('courseCode')}'")
-            flash("Please enter task set name")
-            return redirect("/create_course")
-        cursor.execute(
-            f"INSERT INTO SetOfTask (Name, Course_code) VALUES ({PLACEHOLDER}, {PLACEHOLDER})",
-            (request.form.get("taskSetName"), request.form.get("courseCode"))
+    # POST request connects one or more students to the specific course
+    if request.form.get("addStudentType") == "single":
+        # If the student is already enrolled in the course, notifies the instructor
+        if execute_sql(f"SELECT student_username, course_code FROM StudentCourseTable WHERE student_username='{request.form.get('singleStudent')}' AND course_code='{request.form.get('courseSelect')}'", all = 1, fetch=True):
+            flash("Student already added to this course")
+            return redirect("/add_students_to_course")
+        execute_sql(
+            "INSERT INTO StudentCourseTable (student_username, course_code) VALUES (?, ?)",
+            (request.form.get("singleStudent"), request.form.get("courseSelect")),
         )
-
-    # If the instructor chose to add one or more students as well
-    if request.form.get("addStudents"):
-        if request.form.get("studentType") == "single":
-            if request.form.get("singleStudent") == "":
-                cursor.execute(f"DELETE FROM Course WHERE course_code='{request.form.get('courseCode')}'")
-                flash("Please select the students to add")
-                return redirect("/create_course")
+        flash("Successfully added the student")
+    else:
+        # Creating a list of students that were chosen by the instructor
+        selected_students = [value for key, value in request.form.items() if "groupStudent" in key]
+        for student in selected_students:
+            # If one of the students is already enrolled in the course, notifies the instructor
+            if cursor.execute(
+                f"SELECT student_username, course_code FROM StudentCourseTable WHERE student_username='{student}' AND course_code='{request.form.get('courseSelect')}'").fetchone():
+                flash("One of the students already added to this course")
+                return redirect("/add_students_to_course")
             cursor.execute(
                 "INSERT INTO StudentCourseTable (student_username, course_code) VALUES (?, ?)",
-                (request.form.get("singleStudent"), request.form.get("courseCode")),
+                (student, request.form.get("courseSelect")),
             )
-        else:
-            selected_students = [value for key, value in request.form.items() if "groupStudent" in key]
-            if not selected_students:
-                cursor.execute(f"DELETE FROM Course WHERE course_code='{request.form.get('courseCode')}'")
-                flash("Please select the students to add")
-                return redirect("/create_course")
-            for student in selected_students:
-                cursor.execute(
-                    "INSERT INTO StudentCourseTable (student_username, course_code) VALUES (?, ?)",
-                    (student, request.form.get("courseCode"))
-                )
-
-
+        flash("Successfully added the students")
     conn.commit()
-
-    flash("Course created successfully")
-
-    return redirect("/create_course")
-
+    return redirect("/add_students_to_course")
 # ========================
-
-
-# /generate_report
-# Displays the page to select the type of the report and students to generate report for
-# ========================
-@app.route("/generate_report", methods=["GET", "POST"])
-@login_required
-@instructor_only
-
-def generate_report():
-    course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
-    students = []
-    for course_code in course_codes:
-        students.extend([item[0] for item in cursor.execute(f"SELECT student_username FROM StudentCourseTable WHERE course_code='{course_code}'").fetchall()])
-    # GET request displays the form with individual/group selection and the students related to a particular instructor
-    if request.method == "GET":
-        return render_template("website_pages/generate_report.html", students=students)
-    
-    if request.method == "POST" and "highlights" in request.form:
-        session["highlights"] = json.loads(request.form.get("highlights"))
-        prev_choices = (request.args.get("task_id"), request.args.get("type"), request.args.get("format"))
-        return render_template("./website_pages/generate_report.html", prev_choices=prev_choices, students=students)
-# ========================
-
-# /login
-# This is the only route that can set the user as logged in, because after signing up, the
-# user has to log in with the entered credentials.
-# Logs the user in as an admin, instructor, or student.
-# ========================
-@app.route("/login", methods=["GET", "POST"])
-
-def login():
-    # If the user is already logged in, redirect them to the main page
-    if "latte_user" in session:
-        return redirect("/")
-
-    # GET request displays the login form
-    if request.method == "GET":
-        return render_template("website_pages/login.html")
-
-    # POST request validates entered credentials
-    password = cursor.execute(f"SELECT password FROM User WHERE username='{request.form.get('username')}'").fetchone()
-
-    # If the password was not found for the given username, it means the user does not exist
-    if not password:
-        flash("The user does not exist")
-        return render_template("website_pages/login.html")
-
-    # If the password is not correct
-    if password[0] != request.form.get("password"):
-        flash("Passwords do not match")
-        return render_template("website_pages/login.html")
-
-    # Selecting the admin and instructor usernames to check the type of the user
-    admins_usernames = [item[0] for item in cursor.execute("SELECT admin_username FROM Admin").fetchall()]
-    instructors_usernames = [item[0] for item in cursor.execute("SELECT instructor_username FROM Instructor").fetchall()]
-
-    # Setting the type of the user
-    if request.form.get("username") in admins_usernames:
-        session["user_type"] = "a"
-    elif request.form.get("username") in instructors_usernames:
-        session["user_type"] = "i"
-    else:
-        session["user_type"] = "s"
-
-    # Setting the username in session to be used elsewhere in the code
-    session["latte_user"] = f"{request.form.get('username')}"
-
-    return redirect("/")
-# ========================
-
-
-# /signup
-# Signs the new user as a student or instructor.
-# This route also serves as a method for admin to add the new instructor to the database
-# ========================
-@app.route("/signup", methods=["GET", "POST"])
-def signup():
-    # If the request was issued by admin to add new instructor
-    if request.args.get("admin") == "true":
-        # If the user other than admin tries to access this route
-        if session['user_type'] != "a":
-            flash("You do not have the authority to perform this action")
-            return redirect("/")
-        
-        username = cursor.execute(f"SELECT Instructor_username FROM Instructor WHERE Instructor_username='{request.form.get('username')}'").fetchone()
-        if username:
-            flash("This username already exists")
-            return redirect("/")
-        
-        try:
-            with smtplib.SMTP("smtp.gmail.com", 587) as connection:
-                connection.starttls()
-                connection.login(user=USER, password=PASSWORD)
-                
-                mail = f"Subject:Latte - Username Added Alert\n\nYour username has been added to the system. You can now register as an instructor. \n Your username: {request.form.get('username')}"
-                connection.sendmail(from_addr=USER, to_addrs=request.form.get("email"), msg=mail)
-        except Exception as e:
-            print(f"{e}")
-            flash("The email could not be sent. The user not added")
-            return redirect("/")
-        
-        cursor.execute(
-            f"INSERT INTO Instructor (Instructor_username) VALUES ({PLACEHOLDER})",
-            (request.form.get("username"), )
-        )
-        conn.commit()
-        flash("Instructor username added successfully")
-        return redirect("/")
-
-    # If the user is already logged in, redirect them to the main page
-    if "latte_user" in session:
-        return redirect("/")
-
-    # GET request shows the signup form
-    if request.method == "GET":
-        return render_template("website_pages/signup.html")
-
-    # POST request adds the new user
-    cursor.execute(
-        f"INSERT INTO User (Username, Password, Name, Surname, DateOfBirth) VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})",
-        (request.form.get("username"), request.form.get("password"), request.form.get("name"),
-         request.form.get("surname"), request.form.get("dateofbirth"))
-    )
-
-    # Checks whether the new user is instructor or student
-    instructor_usernames = [item[0] for item in cursor.execute("SELECT instructor_username FROM Instructor").fetchall()]
-    if request.form.get("username") in instructor_usernames:
-        user_type = "instructor"
-    else:
-        cursor.execute(
-            f"INSERT INTO Student (Student_username) VALUES ({PLACEHOLDER})",
-            (request.form.get("username"),)
-        )
-        user_type = "student"
-    conn.commit()
-    flash(f"User registered successfully as {user_type}. Please login.")
-    return render_template("website_pages/login.html")
-
-# ========================
-
 
 # /task_set_details/<set_of_task_id>
 # Shows the details of the set of tasks related to the specific instructor and allows
@@ -707,6 +745,29 @@ def generate_and_save_heatmap(heatmap, width, height, student_username, task_id,
     return f"../../static/media/heatmap.png"
 # ========================
 
+# /generate_report
+# Displays the page to select the type of the report and students to generate report for
+# ========================
+@app.route("/generate_report", methods=["GET", "POST"])
+@login_required
+@instructor_only
+
+def generate_report():
+    course_codes = [item[0] for item in cursor.execute(f"SELECT course_code FROM Course WHERE instructor_username='{session['latte_user']}'")]
+    students = []
+    for course_code in course_codes:
+        students.extend([item[0] for item in cursor.execute(f"SELECT student_username FROM StudentCourseTable WHERE course_code='{course_code}'").fetchall()])
+    # GET request displays the form with individual/group selection and the students related to a particular instructor
+    if request.method == "GET":
+        return render_template("website_pages/generate_report.html", students=students)
+    
+    if request.method == "POST" and "highlights" in request.form:
+        session["highlights"] = json.loads(request.form.get("highlights"))
+        prev_choices = (request.args.get("task_id"), request.args.get("type"), request.args.get("format"))
+        return render_template("./website_pages/generate_report.html", prev_choices=prev_choices, students=students)
+# ========================
+
+
 
 # /generate_heatmap_individual
 # Generates the heatmap for one student
@@ -760,38 +821,74 @@ def generate_heatmap_individual():
 
         for user, color in zip(users, colors):
             record_ids = [item[0] for item in cursor.execute(f"SELECT id FROM Record WHERE task_id={task_id} AND student_username='{student_username}'").fetchall()]
-
+            
             coordinates = []
-            for id in record_ids:
-                coordinates.extend(cursor.execute(f"SELECT Gaze_X, Gaze_Y, Gaze_Time FROM Fixation WHERE Record_id={id}").fetchall())
+            for ids in record_ids:
+                coordinates.extend(cursor.execute(f"SELECT Gaze_X, Gaze_Y, Gaze_Time FROM Fixation WHERE Record_id={ids}").fetchall())
+            
 
             # IN CASE CSV SHALL BE ADDED
             if not coordinates:
                 if "csvFile" not in request.files:
-                    flash("For the following student, you shall add the external csv file")
+                    flash("No data found in database and no CSV file provided")
+                    return redirect("/generate_report")            
+                try:
+                    df = pandas.read_csv(request.files["csvFile"])
+                    student_data = df[
+                        (df['student_username'] == student_username) & 
+                        (df['task_id'] == int(task_id))
+                    ]
+                    
+                    if student_data.empty:
+                        flash("No matching data found in CSV for this student/task")
+                        return redirect("/generate_report")
+                    
+                    coordinates = list(zip(
+                        student_data['gaze_x'].astype(float),
+                        student_data['gaze_y'].astype(float),
+                        student_data['gaze_time']
+                    ))
+                except Exception as e:
+                    flash(f"Error processing CSV: {str(e)}")
                     return redirect("/generate_report")
-                df = pandas.read_csv(request.files["csvFile"])
 
-                for index, row in df.iloc[1:].iterrows():
-                    coordinates.append(index)
-
+            # Initialize arrays
             gaze_x = np.array([])
             gaze_y = np.array([])
             raw_times = []
 
+            # Process each coordinate point
             for x, y, t in coordinates:
-                if 0 <= x - left < width and 0 <= y - top < height:
-                    gaze_x = np.append(gaze_x, x - left)
-                    gaze_y = np.append(gaze_y, y - top)
-                    raw_times.append(t.split()[0])
-            
+                # Adjust for screen offset and validate within image bounds
+                adjusted_x = x - left
+                adjusted_y = y - top
+                
+                if 0 <= adjusted_x < width and 0 <= adjusted_y < height:
+                    gaze_x = np.append(gaze_x, adjusted_x)
+                    gaze_y = np.append(gaze_y, adjusted_y)
+                    
+                    # Handle timestamp (split date if present)
+                    try:
+                        time_part = t.split()[0]  # Takes "07:30.8" from "07:30.8 25/03/2023"
+                        raw_times.append(time_part)
+                    except:
+                        raw_times.append(t)  # Fallback if no space in timestamp (""07:30.8" will be like this on the csv file)
+
+            # Convert timestamps to datetime objects
             timestamps = [datetime.datetime.strptime(t, "%H:%M:%S.%f") for t in raw_times]
 
-            fixation_durations = [max(50, (timestamps[i + 1] - timestamps[i]).total_seconds() * 1000) for i in range(len(timestamps) - 1)]
-            fixation_durations.append(fixation_durations[-1])
+            # Calculate fixation durations
+            fixation_durations = [
+                max(50, (timestamps[i+1] - timestamps[i]).total_seconds() * 1000) 
+                for i in range(len(timestamps)-1)
+            ]
+            fixation_durations.append(fixation_durations[-1])  # Duplicate last duration
 
+            # Size interpolation
             min_size, max_size = 100, 500
-            sizes = np.interp(fixation_durations, (min(fixation_durations), max(fixation_durations)), (min_size, max_size))
+            sizes = np.interp(
+                fixation_durations,
+                (min(fixation_durations), max(fixation_durations)), (min_size, max_size))
 
             user_data[user] = {"x": gaze_x, "y": gaze_y, "timestamps": timestamps, "sizes": sizes, "color": color}
 
@@ -850,12 +947,26 @@ def generate_heatmap_individual():
     # IN CASE CSV SHALL BE ADDED
     if not coordinates:
         if "csvFile" not in request.files:
-            flash("For the following student, you shall add the external csv file")
+            flash("No data found in database and no CSV file provided")
+            return redirect("/generate_report")            
+        try:
+            df = pandas.read_csv(request.files["csvFile"])
+            student_data = df[
+                    (df['student_username'] == student_username) & 
+                    (df['task_id'] == int(task_id))
+                ]
+                
+            if student_data.empty:
+                flash("No matching data found in CSV for this student/task")
+                return redirect("/generate_report")
+                
+            coordinates = list(zip(
+                    student_data['gaze_x'].astype(float),
+                    student_data['gaze_y'].astype(float)
+                ))
+        except Exception as e:
+            flash(f"Error processing CSV: {str(e)}")
             return redirect("/generate_report")
-        df = pandas.read_csv(request.files["csvFile"])
-
-        for index, row in df.iloc[1:].iterrows():
-            coordinates.append((index[0], index[1]))
 
     # Generating the heatmap based on the width and height of the image and coordinates
     # of the gaze points
@@ -1129,28 +1240,50 @@ def save_csv():
 @login_required
 @instructor_only
 def save_csv_specific_student():
-    
+    # Get the selected task ID
     task_id = None
-    for item in request.form.items():
-        task_id = int(item[1])
-
-    records = [item[0] for item in cursor.execute(f"SELECT id FROM Record WHERE task_id={task_id}").fetchall()]
+    for key, value in request.form.items():
+        if key.startswith("task_") and value != "on":
+            task_id = int(value)
+            break
+    
+    if not task_id:
+        flash("Please select a task")
+        return redirect("/save_csv")
+    
+    # Get all records for this task
+    records = cursor.execute("""SELECT r.id, r.student_username, u.name, u.surname FROM Record r
+        JOIN User u ON r.student_username = u.username   WHERE r.task_id=? """, (task_id,)).fetchall()
+    
+    if not records:
+        flash("No records found for this task")
+        return redirect("/save_csv")
+    
     filename = f"./static/csv/{session['latte_user']}_{task_id}.csv"
-
-    fixations = []
-
-    for record in records:
-        fixations.extend(cursor.execute(f"SELECT * FROM Fixation WHERE record_id={record}").fetchall())
-
+    
     with open(filename, "w") as file:
-        string = f"{filename.replace('.csv', '').replace('./static/csv/', '')}\n"
-        for fixation in fixations:
-            string += f"{fixation[0]},{fixation[1]},{fixation[2]},{fixation[3]}\n"
-            cursor.execute(f"DELETE FROM Fixation WHERE record_id={fixation[3]} AND gaze_time='{fixation[2]}'")
-        file.write(string)
-
+        # Write header
+        file.write("task_id,student_username,student_name,student_surname,gaze_x,gaze_y,gaze_time,record_id\n")
+        
+        for record in records:
+            record_id, username, name, surname = record
+            fixations = cursor.execute("""
+                SELECT Gaze_X, Gaze_Y, Gaze_Time 
+                FROM Fixation 
+                WHERE record_id=?
+            """, (record_id,)).fetchall()
+            
+            for fixation in fixations:
+                file.write(
+                    f"{task_id},{username},{name},{surname},"
+                    f"{fixation[0]},{fixation[1]},{fixation[2]},{record_id}\n"
+                )
+            
+            # Optionally delete fixations after export
+            cursor.execute("DELETE FROM Fixation WHERE record_id=?", (record_id,))
+    
     conn.commit()
-
+    
     return render_template("./website_pages/save_specific_csv.html", download_link=f"../.{filename}")
 
 
