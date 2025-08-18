@@ -28,7 +28,7 @@ Upon registering to the website, every user gives the consent to use their web c
 The website is built using **Flask**, **HTML/CSS/JS**, and **MySQL**. 
 **Webgazer** library was used in order to track users' eye movements. 
 **Postman** was used for unit and API testing. 
-**Pytest** was used for testing the functions inside of the source code. 
+**Pytest** and **unittest** was used for testing the functions inside of the source code. 
 **Microsoft Word** was used to document our progress throughout the year. 
 **Github** was used for collaborative work and source code share.
 **Trello** was used to track the upcoming, ongoing, and completed tasks and coordinate the work within our team.
