@@ -1,68 +1,34 @@
 # Latte
 
-### /static
-- /js - Upload any ***JavaScript*** (*.js*) 
-- /css - Upload any ***CSS*** (*.css*) 
-- /media - Upload any ***media*** like *.png* or *.gif*
-- /db - Upload any ***database*** like *.db* or *.sql* 
+## Foreword
+One of the most impactful and challenging academic requirements of our university is graduation project. Having completed multiple challenging engineering and compuer science courses, having done 2 internships in our fields, in our 4th year, we were able to implement our skills and expertise in one of the most exciting and significant projects - our graduation project. With the help of our brilliant supervisor, with a lot of effort, patience, and coordinated teamwork, we were able to build something truly innovative and useful in the field of Computer Engineering. We are now happy to share this work with the world and demonstrate the result of 2 semesters' hard work.
 
-### /templates
+## Description
+Latte is a complete ready-to-use product. Its main purpose is to help instructors analyze students' behavior while students solve various programming tasks. However, it does not use traditional methods (e.g. checking whether the answer is correct or not), it uses **eye tracking**. With students' consent, Latte uses web camera to track and analyze eye movements while they solve tasks. It collects data representing students' gaze points in a 2-dimensional array (screen pixels). Regardless of the screen size, it accurately measures each point the student looked at, and this data is then used by instructors to generate 2 types of reports: Heatmap and Gaze Plot.
 
-- Upload any ***HTML*** (*.html* or *.htm*) 
+### Heatmap
+This report clearly shows areas at which the students looked at the most and the least. This report is useful if an instructor wants a quick and easy-to-understand report that shows where the students focus most while solving particular task.
 
-### Flask Architecture
+### Gaze Plot
+This is more advanced than the Heatmap, as it shows each of the gaze points in the order that they were recorded. It looks more complicated than the Heatmap, but it is more useful in terms of understanding the thought process of a student solving a task, as it shows the labeled sequence of gaze points (1-infinity).
 
-The following files and folders ***must*** be in the same folder
+### CSV import-export (managing the database)
+Latte allows the instructors to import and export csv files that contain the data related to the gaze points. This is done to ensure that the database of our app is not very crowded with bulks of data. Once the instructor wants to regenerate some report, they can upload the csv file that they saved before, and the reports will be generated as if the data was taken from the database itself.
 
-- .py file that contains the *app*
-- /templates folder
-- /static folder
+### Instructor functionalities
+Apart from the abovementioned functionalities, Latte also allows the user to be registered as instructor with the username they received via email from the admin. If they are registrered as an instructor, they can add course, add programming tasks and task sets to that course, and edit any of that later. They can also add the students to the course so that the students can access that course's tasks. 
 
-<hr>
+### Student functionalities
+The students can access the programming tasks of the course they have been assigned to and solve them, entering their answer once they are done with the task.
 
-### How to use git? Basic commands
+### Formalities
+Upon registering to the website, every user gives the consent to use their web cameras to collect data to analyze the gaze points.
 
-- Step 1: Install git so that you can use it in your terminal
-
-- Step 2: Cloning the repository
-- - Step 2.1: Create an empty folder
-- - Step 2.2: Open terminal and move to that folder
-- - Step 2.3: Run `git init`
-- - Step 2.4: Run `git clone https://github.com/muhammad-guluzade/Latte-main.git`
-- - Step 2.5: Run `cd Latte-main`
-- - Step 2.6: Run `git remote set-url origin https://github.com/muhammad-guluzade/Latte-main.git`
-
-- Step 3: Modifying the files. 
-- - Step 3.1: Locate test.txt file
-- - Step 3.2: Modify test.txt file however you like
-- - Step 3.3: Run `git add test.txt` while being inside Latte-main folder
-- - Step 3.4: Run `git commit -m "Some message for commit"`
-- - Step 3.5: Run `git checkout -b test_branch`
-- - Step 3.6: If step 3.5 raised an error, it means that test_branch already exists. In this case run `git checkout test_branch`
-- - Step 3.7: Run `git push`
-- - Step 3.8: If `fatal: The current branch new_branch has no upstream branch.` occurs, run `git push --set-upstream origin test_branch` and run `git push` again
-
-- Step 4: Retrieving the changes made by others
-- - `git pull origin main` will pull all the changes and files into your local machine
-
-- Step 5: Additional commands
-- - `git branch` - tells which branch you are at currently
-- - `git status` - shows the status of commited/uncommited files
-
-<hr>
-
-### What is .gitignore ?
-
-In that file, you put everything that you do not want to push to main repository. For example, if in your local machine contains file "test.html" that you do not want to push, just include it as "templates/test.html", and it will not be pushed.
-
-<hr>
-
-### Files in our project (Explanation)
-
-#### main.py
-
-- This file is responsible for the flask application
-
-#### database.py
-
-- This file contains the database initializer
+## Tools
+The website is built using **Flask**, **HTML/CSS/JS**, and **MySQL**. 
+**Webgazer** library was used in order to track users' eye movements. 
+**Postman** was used for unit and API testing. 
+**Pytest** was used for testing the functions inside of the source code. 
+**Microsoft Word** was used to document our progress throughout the year. 
+**Github** was used for collaborative work and source code share.
+**Trello** was used to track the upcoming, ongoing, and completed tasks and coordinate the work within our team.
