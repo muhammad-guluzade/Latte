@@ -41,8 +41,8 @@ cursor = conn.cursor()
 
 # EMAIL CREDENTIALS
 # =========================
-USER = "freshmark320@gmail.com"
-PASSWORD = "rdcxrntaniibdmkd"
+USER = "this shall be filled to send emails automatically from the code"
+PASSWORD = "this shall be filled to send emails automatically from the code"
 # =========================
 
 # Creating an app that runs the entire localhost server
